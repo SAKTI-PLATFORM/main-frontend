@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SAKTI AI — Frontend
 
-## Getting Started
+> Antarmuka pengguna platform *job matching* SAKTI AI berbasis *Progressive Web App* (PWA).
 
-First, run the development server:
+## Progress
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- [x] Inisialisasi proyek Next.js berbasis [nextjs-template]
+- [x] Konfigurasi TypeScript dan App Router
+- [x] Setup Tailwind CSS 4
+- [x] Konfigurasi ESLint 9
+- [x] Konfigurasi struktur folder dan *routing* global
+- [ ] Implementasi halaman *Job Seeker Portal*
+- [ ] Implementasi halaman *Recruiter Portal*
+- [ ] Implementasi dasbor Government & Companies
+- [ ] Integrasi REST API backend (Axios)
+- [ ] Implementasi fitur *Match Score* dan visualisasi *skill gap*
+- [ ] Implementasi autentikasi (JWT)
+
+## Tech Stack
+
+| Layer | Teknologi |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| UI Library | React 19 |
+| Bahasa | TypeScript 5 |
+| Styling | Tailwind CSS 4 |
+| Linting | ESLint 9 |
+
+## Struktur Folder
+
+```
+src/
+└── app/
+    ├── favicon.ico
+    ├── globals.css
+    ├── layout.tsx
+    └── page.tsx
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Instalasi
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Clone repo
+git clone https://github.com/SAKTI-PLATFORM/main-frontend.git
+cd sakti-frontend
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Install dependencies
+npm install
 
-## Learn More
+# Jalankan development server
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Buka [http://localhost:3000](http://localhost:3000) di browser.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Command | Deskripsi |
+|---|---|
+| `npm run dev` | Jalankan *development server* |
+| `npm run build` | *Build* untuk *production* |
+| `npm run start` | Jalankan *production server* |
+| `npm run lint` | Cek kode dengan ESLint |
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Deploy bisa menggunakan [Vercel](https://vercel.com/new):
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push kode ke GitHub
+2. Import repository di Vercel
+3. Deploy otomatis setiap push ke `main`
+
+## Dokumentasi Terkait
+
+Repositori dokumentasi lengkap (PRD, market research, CJM) tersedia di:
+[SAKTI-PLATFORM/sakti-product-docs](https://github.com/SAKTI-PLATFORM/sakti-product-docs)
