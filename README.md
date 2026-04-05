@@ -4,7 +4,7 @@
 
 ## Progress
 
-- [x] Inisialisasi proyek Next.js berbasis [nextjs-template]
+- [x] Inisialisasi proyek Next.js 
 - [x] Konfigurasi TypeScript dan App Router
 - [x] Setup Tailwind CSS 4
 - [x] Konfigurasi ESLint 9
