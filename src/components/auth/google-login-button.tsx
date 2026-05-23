@@ -1,6 +1,7 @@
 'use client'
 
 import { useGoogleLogin } from '@react-oauth/google'
+import { Button } from '@/components/ui/button'
 
 interface GoogleLoginButtonProps {
   label: string
@@ -21,15 +22,16 @@ export default function GoogleLoginButton({
   })
 
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
       onClick={() => login()}
       disabled={disabled}
-      className="flex items-center justify-center gap-3 w-full border border-[#3535C8] rounded py-3 text-sm font-semibold text-[#3535C8] hover:bg-indigo-50 transition-colors disabled:opacity-50"
+      className="w-full h-12 border-[#3535C8] text-[#3535C8] hover:bg-indigo-50 hover:text-[#3535C8] gap-3 text-sm font-semibold"
     >
       <GoogleIcon />
       {label}
-    </button>
+    </Button>
   )
 }
 
