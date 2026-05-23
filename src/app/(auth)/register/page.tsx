@@ -7,6 +7,9 @@ import { authApi } from '@/api/auth.api'
 import AuthLeftPanel from '@/components/auth/auth-left-panel'
 import GoogleLoginButton from '@/components/auth/google-login-button'
 import RoleTab from '@/components/auth/role-tab'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { ROUTES } from '@/constants'
 import { setToken, setUser } from '@/features/auth'
 import { useAppDispatch } from '@/hooks/redux'
@@ -73,50 +76,55 @@ export default function RegisterPage() {
     <div className="flex min-h-screen">
       <AuthLeftPanel />
 
-      {/* Right panel */}
       <div className="flex flex-1 flex-col justify-center bg-white px-14 py-12">
         <div className="w-full max-w-[480px]">
 
-          {/* Role tabs */}
           <div className="flex mb-6">
             <RoleTab value={role} onChange={setRole} />
           </div>
 
-          {/* Title */}
           <h1 className="text-4xl font-bold text-zinc-900 leading-tight mb-7">
             Get More Opportunities
           </h1>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-zinc-800">Full name</label>
-              <input
+              <Label htmlFor="fullName" className="text-sm font-semibold text-zinc-800">
+                Full name
+              </Label>
+              <Input
+                id="fullName"
                 name="fullName"
                 value={form.fullName}
                 onChange={handleChange}
                 placeholder="Enter your full name"
                 required
-                className="border border-zinc-300 rounded px-4 py-3.5 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:ring-2 focus:ring-[#3535C8] focus:border-transparent transition"
+                className="h-12 px-4 text-sm"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-zinc-800">Email Address</label>
-              <input
+              <Label htmlFor="email" className="text-sm font-semibold text-zinc-800">
+                Email Address
+              </Label>
+              <Input
+                id="email"
                 name="email"
                 type="email"
                 value={form.email}
                 onChange={handleChange}
                 placeholder="Enter Email Address"
                 required
-                className="border border-zinc-300 rounded px-4 py-3.5 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:ring-2 focus:ring-[#3535C8] focus:border-transparent transition"
+                className="h-12 px-4 text-sm"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-semibold text-zinc-800">Password</label>
-              <input
+              <Label htmlFor="password" className="text-sm font-semibold text-zinc-800">
+                Password
+              </Label>
+              <Input
+                id="password"
                 name="password"
                 type="password"
                 value={form.password}
@@ -124,37 +132,34 @@ export default function RegisterPage() {
                 placeholder="Enter your password"
                 required
                 minLength={8}
-                className="border border-zinc-300 rounded px-4 py-3.5 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:ring-2 focus:ring-[#3535C8] focus:border-transparent transition"
+                className="h-12 px-4 text-sm"
               />
             </div>
 
             {error && <p className="text-sm text-red-500">{error}</p>}
 
-            <button
+            <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#3535C8] hover:bg-[#2c2cad] text-white font-bold py-4 rounded text-base transition-colors disabled:opacity-60"
+              className="w-full h-12 text-base font-bold"
             >
               {loading ? 'Loading...' : 'Continue'}
-            </button>
+            </Button>
           </form>
 
-          {/* Already have account */}
           <p className="text-sm text-zinc-500 text-center mt-5">
             Already have an account?{' '}
-            <Link href={ROUTES.LOGIN} className="text-[#3535C8] font-bold hover:underline">
+            <Link href={ROUTES.LOGIN} className="text-primary font-bold hover:underline">
               Login
             </Link>
           </p>
 
-          {/* Divider */}
           <div className="flex items-center gap-3 my-4">
             <div className="flex-1 h-px bg-zinc-200" />
             <span className="text-sm text-zinc-400 whitespace-nowrap">Or sign up with email</span>
             <div className="flex-1 h-px bg-zinc-200" />
           </div>
 
-          {/* Google button */}
           {hasGoogle && (
             <GoogleLoginButton
               label="Sign Up with Google"
@@ -164,12 +169,11 @@ export default function RegisterPage() {
             />
           )}
 
-          {/* Terms */}
           <p className="text-xs text-zinc-400 leading-relaxed mt-5">
             By clicking &apos;Continue&apos;, you acknowledge that you have read and accept the{' '}
-            <span className="text-[#3535C8] cursor-pointer hover:underline">Terms of Service</span>{' '}
+            <span className="text-primary cursor-pointer hover:underline">Terms of Service</span>{' '}
             and{' '}
-            <span className="text-[#3535C8] cursor-pointer hover:underline">Privacy Policy</span>.
+            <span className="text-primary cursor-pointer hover:underline">Privacy Policy</span>.
           </p>
         </div>
       </div>
