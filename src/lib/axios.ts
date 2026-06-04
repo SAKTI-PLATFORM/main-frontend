@@ -18,9 +18,15 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
+    // Expired/invalid session → bounce to login, but NOT while already on an
+    // auth page (there a 401 just means wrong credentials → surfaced as a toast).
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      const path = window.location.pathname
+      const onAuthPage = path.startsWith('/login') || path.startsWith('/register')
+      if (!onAuthPage) {
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      }
     }
     return Promise.reject(error)
   },
