@@ -14,6 +14,8 @@ import { ROUTES } from '@/constants'
 import { setToken, setUser } from '@/features/auth'
 import { useAppDispatch } from '@/hooks/redux'
 import type { UserRoleEnum } from '@/types/auth.types'
+import { handleApiError } from '@/utils/api-error'
+import { Toast } from '@/utils/toast'
 
 const hasGoogle = !!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
@@ -23,12 +25,10 @@ export default function RegisterPage() {
 
   const [role, setRole] = useState<UserRoleEnum>('JOB_SEEKER')
   const [form, setForm] = useState({ fullName: '', email: '', password: '' })
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
-    setError('')
   }
 
   async function redirectByRole(token: string) {
@@ -50,9 +50,7 @@ export default function RegisterPage() {
       })
       await redirectByRole(res.data.data.token)
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-      setError(msg ?? 'Terjadi kesalahan. Coba lagi.')
+      handleApiError(err)
     } finally {
       setLoading(false)
     }
@@ -64,9 +62,7 @@ export default function RegisterPage() {
       const res = await authApi.googleAuth({ idToken: accessToken, role })
       await redirectByRole(res.data.data.token)
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-      setError(msg ?? 'Google sign up gagal. Coba lagi.')
+      handleApiError(err)
     } finally {
       setLoading(false)
     }
@@ -136,8 +132,6 @@ export default function RegisterPage() {
               />
             </div>
 
-            {error && <p className="text-sm text-red-500">{error}</p>}
-
             <Button
               type="submit"
               disabled={loading}
@@ -164,7 +158,7 @@ export default function RegisterPage() {
             <GoogleLoginButton
               label="Sign Up with Google"
               onSuccess={handleGoogleSuccess}
-              onError={() => setError('Google sign up gagal. Coba lagi.')}
+              onError={() => Toast.error('Google sign up gagal. Coba lagi.')}
               disabled={loading}
             />
           )}
