@@ -20,7 +20,7 @@ export default function RoleTab({ value, onChange }: RoleTabProps) {
           onClick={() => onChange(tab.value)}
           className={`px-5 py-2 text-sm font-semibold rounded transition-colors ${
             value === tab.value
-              ? 'bg-[#3535C8] text-white'
+              ? 'bg-[#2701C3] text-white'
               : 'text-zinc-400 hover:text-zinc-700'
           }`}
         >

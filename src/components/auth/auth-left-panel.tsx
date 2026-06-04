@@ -2,7 +2,7 @@ import Image from 'next/image'
 
 export default function AuthLeftPanel() {
   return (
-    <div className="relative hidden lg:flex w-1/2 bg-[#3535C8] overflow-hidden min-h-screen">
+    <div className="relative hidden lg:flex w-1/2 bg-[#2701C3] overflow-hidden min-h-screen">
 
       {/* Logo — top left */}
       <div className="absolute top-8 left-8 z-20">
