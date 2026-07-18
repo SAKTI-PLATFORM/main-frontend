@@ -1,13 +1,9 @@
 'use client'
 
 import {
-  Briefcase,
-  Building2,
+  FileText,
   LayoutDashboard,
-  MessageSquare,
-  Search,
   Settings,
-  UserRound,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -16,11 +12,7 @@ import { cn } from '@/lib/utils'
 
 const NAV = [
   { label: 'Dashboard', href: '/job-seeker', icon: LayoutDashboard },
-  { label: 'Messages', href: '/job-seeker/messages', icon: MessageSquare },
-  { label: 'My Applications', href: '/job-seeker/applications', icon: Briefcase },
-  { label: 'Find Jobs', href: '/job-seeker/jobs', icon: Search },
-  { label: 'Browse Companies', href: '/job-seeker/companies', icon: Building2 },
-  { label: 'My Public Profile', href: '/job-seeker/profile', icon: UserRound },
+  { label: 'CV Onboarding', href: '/job-seeker/onboarding', icon: FileText },
 ] as const
 
 export function Sidebar() {
