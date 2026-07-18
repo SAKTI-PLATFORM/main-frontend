@@ -1,21 +1,11 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { seekerApi } from '@/api/seeker.api'
 import { Input } from '@/components/ui/input'
 import {
   COMPANY_TYPE_OPTIONS,
   JOB_TYPE_OPTIONS,
   WORK_MODE_OPTIONS,
 } from '@/features/onboarding/constants'
-import type {
-  CompanyType,
-  JobType,
-  RoleOption,
-  WorkMode,
-} from '@/types/seeker.types'
+import type { CompanyType, JobType, WorkMode } from '@/types/seeker.types'
 import { Field } from '../field'
-import { OptionSelect } from '../option-select'
 import { OptionToggleGroup } from '../option-toggle-group'
 
 export interface VisionState {
@@ -38,43 +28,17 @@ function parseAmount(raw: string): number | undefined {
 }
 
 export function VisionStep({ value, onChange }: Props) {
-  const [roles, setRoles] = useState<RoleOption[]>([])
-
-  useEffect(() => {
-    let active = true
-    seekerApi
-      .roles()
-      .then((res) => {
-        if (active) setRoles(res.data.data)
-      })
-      .catch(() => {
-        // Service down → keep roles empty and fall back to free-text input.
-      })
-    return () => {
-      active = false
-    }
-  }, [])
-
   return (
     <div className="space-y-6">
       <Field
         label="Target Role"
         description="Pilih peran yang kamu tuju — menentukan benchmark, skill gap & lowongan"
       >
-        {roles.length > 0 ? (
-          <OptionSelect
-            options={roles.map((role) => ({ value: role.name, label: role.name }))}
-            value={value.targetRole || undefined}
-            onChange={(targetRole) => onChange({ targetRole: targetRole ?? '' })}
-            placeholder="Pilih target role"
-          />
-        ) : (
-          <Input
-            value={value.targetRole}
-            placeholder="Mis. Data Scientist"
-            onChange={(event) => onChange({ targetRole: event.target.value })}
-          />
-        )}
+        <Input
+          value={value.targetRole}
+          placeholder="Mis. Data Scientist"
+          onChange={(event) => onChange({ targetRole: event.target.value })}
+        />
       </Field>
 
       <Field label="Mode Kerja">

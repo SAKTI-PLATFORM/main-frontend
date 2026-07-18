@@ -70,6 +70,89 @@ export interface VisionPayload {
   jobTypes: JobType[]
 }
 
+export interface ParseCvPayload {
+  fileName: string
+  fileType: string
+  fileUrl: string
+  rawText: string
+  versionNumber?: number
+}
+
+export interface ParseCvInsertedCounts {
+  educations: number
+  experiences: number
+  projects: number
+  certifications: number
+  skills: number
+}
+
+export interface ParsedCvResult {
+  confidenceScore: number
+  educations: Array<Record<string, unknown>>
+  experiences: Array<Record<string, unknown>>
+  projects: Array<Record<string, unknown>>
+  certifications: Array<Record<string, unknown>>
+  skills: Array<Record<string, unknown>>
+}
+
+export interface ParseCvResponse {
+  cvId: string
+  parsedId: string
+  confidenceScore: number
+  inserted: ParseCvInsertedCounts
+  parsedResult: ParsedCvResult
+}
+
+export interface OnboardingRecordResponse {
+  id: string
+}
+
+export interface CreateEducationPayload {
+  educationLevel?: EducationLevel
+  institution?: string
+  major?: string
+  degree: string
+  startYear?: number
+  endYear?: number
+  gpa?: number
+  isCurrent?: boolean
+}
+
+export interface CreateExperiencePayload {
+  title: string
+  organization: string
+  experienceType: string
+  startDate?: string
+  endDate?: string
+  isCurrent?: boolean
+  durationMonths?: number
+  description?: string
+}
+
+export interface CreateProjectPayload {
+  projectName: string
+  description?: string
+  toolsUsed?: string
+  startDate?: string
+  endDate?: string
+}
+
+export interface CreateCertificationPayload {
+  certificationName: string
+  issuer: string
+  issuedYear?: number
+  certificateUrl?: string
+}
+
+export interface CreateSkillPayload {
+  skillId?: string
+  detectedText: string
+  inferredLevel?: string
+  confidenceScore?: number
+  evidenceSource?: string
+  evidenceStrength?: string
+}
+
 export type OnboardingStep =
   | 'foundation'
   | 'expertise'

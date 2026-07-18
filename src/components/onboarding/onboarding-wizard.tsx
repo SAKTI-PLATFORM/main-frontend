@@ -1,259 +1,548 @@
-'use client';
+'use client'
 
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { seekerApi } from '@/api/seeker.api';
-import { Button } from '@/components/ui/button';
-import { OCEAN_ITEMS, RIASEC_ITEMS } from '@/features/onboarding/constants';
-import type { AssessmentPayload } from '@/types/seeker.types';
-import { handleApiError } from '@/utils/api-error';
-import { Toast } from '@/utils/toast';
-import { AssessmentStep, type OceanAnswers, type RiasecAnswers } from './steps/assessment-step';
-import { ExpertiseStep, type ExpertiseState } from './steps/expertise-step';
-import { FoundationStep, type FoundationState } from './steps/foundation-step';
-import { VisionStep, type VisionState } from './steps/vision-step';
+import Image from 'next/image'
+import { useRouter } from 'next/navigation'
+import { FormEvent, useState } from 'react'
+import { seekerApi } from '@/api/seeker.api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import type {
+  CreateCertificationPayload,
+  CreateEducationPayload,
+  CreateExperiencePayload,
+  CreateProjectPayload,
+  CreateSkillPayload,
+  EducationLevel,
+  ParseCvResponse,
+} from '@/types/seeker.types'
+import { handleApiError } from '@/utils/api-error'
+import { Toast } from '@/utils/toast'
 
-const STEP_IMAGES: (string | null)[] = [
-  '/foundation.png',
-  '/expertise.png',
-  '/inner.png',
-  '/vision.png',
-]
+const educationLevels: EducationLevel[] = ['SMA', 'D3', 'S1', 'S2', 'S3']
 
-const STEPS = [
-  {
-    number: '01',
-    title: 'The Foundation',
-    subtitle: 'Profil Dasar',
-    description: 'Profil dasar tentang dirimu. Bantu kami mengenal latar belakang dan pengalaman awalmu.',
-  },
-  {
-    number: '02',
-    title: 'Your Expertise',
-    subtitle: 'Skill Self Decloration',
-    description: 'Ceritakan keahlian dan tools yang kamu kuasai. Bantu kami memahami kompetensi teknismu.',
-  },
-  {
-    number: '03',
-    title: 'The Inner You',
-    subtitle: 'Asesmen Psikometrik',
-    description: 'Temukan kecocokan budaya kerja yang tepat. Bantu kami memahami karakter dan minat kariemu secara mendalam.',
-  },
-  {
-    number: '04',
-    title: 'Your Vision',
-    subtitle: 'Preferensi Karier',
-    description: 'Preferensi karier impianmu. Ceritakan lingkungan kerja ideal dan target peran yang kamu inginkan.',
-  },
-] as const;
-
-interface OnboardingWizardProps {
-  /** Resume at this step (0-based) — derived from saved onboarding progress. */
-  initialStep?: number;
+const emptyEducation: CreateEducationPayload = {
+  degree: '',
+  institution: '',
+  major: '',
 }
 
-export function OnboardingWizard({ initialStep = 0 }: OnboardingWizardProps) {
-  const router = useRouter();
-  const [step, setStep] = useState(() =>
-    Math.min(Math.max(initialStep, 0), STEPS.length - 1),
-  );
-  const [submitting, setSubmitting] = useState(false);
+const emptyExperience: CreateExperiencePayload = {
+  title: '',
+  organization: '',
+  experienceType: 'WORK',
+}
 
-  const [foundation, setFoundation] = useState<FoundationState>({});
-  const [expertise, setExpertise] = useState<ExpertiseState>({
-    tools: [],
-    knowledgeAreas: [],
-    softSkillsRanked: [],
-  });
-  const [ocean, setOcean] = useState<OceanAnswers>({});
-  const [riasec, setRiasec] = useState<RiasecAnswers>({});
-  const [vision, setVision] = useState<VisionState>({
-    targetRole: '',
-    workModes: [],
-    companyTypes: [],
-    jobTypes: [],
-  });
+const emptyProject: CreateProjectPayload = {
+  projectName: '',
+  description: '',
+  toolsUsed: '',
+}
 
-  async function submitFoundation(): Promise<void> {
-    if (!foundation.phoneNumber?.trim() || !foundation.dob) {
-      throw new Error('Lengkapi nomor telepon dan tanggal lahir.');
-    }
-    if (!foundation.gender || !foundation.employmentStatus || !foundation.educationLevel || !foundation.field) {
-      throw new Error('Lengkapi semua pilihan di langkah ini.');
-    }
-    await seekerApi.foundation({
-      phoneNumber: foundation.phoneNumber.trim(),
-      dob: foundation.dob,
-      gender: foundation.gender,
-      employmentStatus: foundation.employmentStatus,
-      educationLevel: foundation.educationLevel,
-      field: foundation.field,
-    });
-  }
+const emptyCertification: CreateCertificationPayload = {
+  certificationName: '',
+  issuer: '',
+}
 
-  async function submitExpertise(): Promise<void> {
-    if (expertise.tools.length === 0) {
-      throw new Error('Pilih minimal satu tool yang kamu kuasai.');
-    }
-    if (expertise.tools.some((tool) => !tool.experience)) {
-      throw new Error('Tentukan lama pengalaman untuk setiap tool.');
-    }
-    await seekerApi.expertise({
-      tools: expertise.tools,
-      knowledgeAreas: expertise.knowledgeAreas,
-      softSkillsRanked: expertise.softSkillsRanked,
-    });
-  }
+const emptySkill: CreateSkillPayload = {
+  detectedText: '',
+  evidenceSource: 'manual',
+}
 
-  async function submitAssessment(): Promise<void> {
-    const oceanResponses: AssessmentPayload['oceanResponses'] = OCEAN_ITEMS.map((item, index) => ({
-      trait: item.trait,
-      polarity: item.polarity,
-      value: ocean[index],
-    }));
-    if (oceanResponses.some((r) => !r.value)) {
-      throw new Error('Jawab seluruh pernyataan kepribadian (1-7).');
-    }
-    if (RIASEC_ITEMS.some((item) => riasec[item.item] === undefined)) {
-      throw new Error('Jawab seluruh pernyataan minat (1-3).');
-    }
-    const riasecResponses: AssessmentPayload['riasecResponses'] = RIASEC_ITEMS.map((item) => ({
-      item: item.item,
-      letter: item.letter,
-      agreed: (riasec[item.item] ?? 1) >= 3,
-    }));
-    await seekerApi.assessment({ oceanResponses, riasecResponses });
-  }
+export function OnboardingWizard() {
+  const router = useRouter()
+  const [parsing, setParsing] = useState(false)
+  const [saving, setSaving] = useState<string | null>(null)
+  const [parseResult, setParseResult] = useState<ParseCvResponse | null>(null)
+  const [cvForm, setCvForm] = useState({
+    fileName: 'cv.txt',
+    fileType: 'text/plain',
+    fileUrl: 'manual://cv-text',
+    rawText: '',
+  })
+  const [education, setEducation] = useState<CreateEducationPayload>(emptyEducation)
+  const [experience, setExperience] = useState<CreateExperiencePayload>(emptyExperience)
+  const [project, setProject] = useState<CreateProjectPayload>(emptyProject)
+  const [certification, setCertification] =
+    useState<CreateCertificationPayload>(emptyCertification)
+  const [skill, setSkill] = useState<CreateSkillPayload>(emptySkill)
 
-  async function submitVision(): Promise<void> {
-    if (!vision.targetRole.trim()) {
-      throw new Error('Isi target role yang kamu tuju.');
+  async function submitCv(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!cvForm.rawText.trim()) {
+      Toast.error('Paste isi text CV dulu.')
+      return
     }
-    if (vision.workModes.length === 0 || vision.jobTypes.length === 0) {
-      throw new Error('Pilih minimal satu mode kerja dan tipe pekerjaan.');
-    }
-    await seekerApi.vision({
-      targetRole: vision.targetRole.trim(),
-      workModes: vision.workModes,
-      salaryMin: vision.salaryMin,
-      salaryMax: vision.salaryMax,
-      companyTypes: vision.companyTypes,
-      jobTypes: vision.jobTypes,
-    });
-  }
 
-  const submitters = [submitFoundation, submitExpertise, submitAssessment, submitVision];
-
-  async function handleNext(): Promise<void> {
-    setSubmitting(true);
+    setParsing(true)
     try {
-      await submitters[step]();
-      if (step < STEPS.length - 1) {
-        setStep(step + 1);
-      } else {
-        Toast.success('Profil berhasil disimpan!');
-        router.push('/job-seeker');
-      }
-    } catch (caught) {
-      handleApiError(caught);
+      const response = await seekerApi.parseCv({
+        ...cvForm,
+        rawText: cvForm.rawText.trim(),
+      })
+      setParseResult(response.data.data)
+      window.localStorage.setItem('sakti:onboarding:cvParsed', 'true')
+      Toast.success('CV berhasil diparsing dan disimpan.')
+    } catch (error) {
+      handleApiError(error)
     } finally {
-      setSubmitting(false);
+      setParsing(false)
     }
   }
 
-  const current = STEPS[step];
-  const isLast = step === STEPS.length - 1;
+  async function submitManual<T>(
+    key: string,
+    action: () => Promise<T>,
+    afterSave: () => void,
+  ) {
+    setSaving(key)
+    try {
+      await action()
+      afterSave()
+      window.localStorage.setItem('sakti:onboarding:cvParsed', 'true')
+      Toast.success('Data berhasil disimpan.')
+    } catch (error) {
+      handleApiError(error)
+    } finally {
+      setSaving(null)
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Navbar */}
-      <header className="flex items-center px-6 py-4 border-b border-gray-100">
-        <Image src="/logo-color.png" alt="SAKTI Ai" width={120} height={40} className="h-10 w-auto" priority />
+    <div className="min-h-screen bg-white">
+      <header className="flex items-center border-b border-gray-100 px-6 py-4">
+        <Image
+          src="/logo-color.png"
+          alt="SAKTI Ai"
+          width={120}
+          height={40}
+          className="h-10 w-auto"
+          priority
+        />
       </header>
 
-      {/* Main */}
-      <main className="flex-1 flex flex-col items-center px-4 py-8 ">
-        <div className="w-full max-w-[800px] bg-white px-16 py-4 shadow-lg rounded-xl border border-gray-100">
-          {/* Hero */}
-          <div className="flex flex-col justify-center items-center text-center mb-8">
-            <Image src="/header-onboarding.png" alt="Lets find your Future Path with SAKTI Ai" width={300} height={60} className="w-48 pb-2 text-center h-auto" priority />
-            <p className="text-xs text-gray-400 max-w-xs text-center mx-auto leading-relaxed">Jembatan cerdas yang menghubungkan potensimu dengan karir impian melalui analisis AI yang akurat </p>
+      <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
+        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold text-primary">Tahap 01</p>
+          <h1 className="mt-1 text-2xl font-bold text-gray-900">
+            Parse CV untuk memulai onboarding
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-500">
+            Paste text CV yang sudah diekstrak dari PDF/DOCX. Backend akan
+            memanggil SAKTI-AI, lalu menyimpan education, experience, project,
+            certification, dan skill awal ke database.
+          </p>
+        </section>
+
+        <form
+          onSubmit={submitCv}
+          className="grid gap-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+        >
+          <div className="grid gap-3 md:grid-cols-3">
+            <Field label="File name">
+              <Input
+                value={cvForm.fileName}
+                onChange={(event) =>
+                  setCvForm((prev) => ({ ...prev, fileName: event.target.value }))
+                }
+              />
+            </Field>
+            <Field label="File type">
+              <Input
+                value={cvForm.fileType}
+                onChange={(event) =>
+                  setCvForm((prev) => ({ ...prev, fileType: event.target.value }))
+                }
+              />
+            </Field>
+            <Field label="File URL">
+              <Input
+                value={cvForm.fileUrl}
+                onChange={(event) =>
+                  setCvForm((prev) => ({ ...prev, fileUrl: event.target.value }))
+                }
+              />
+            </Field>
           </div>
 
-          {/* Step Indicator */}
-          <div className="relative flex items-start w-full mb-6">
-            {/* Gray base line through all nodes */}
-            <div className="absolute top-[18px] left-[12.5%] right-[12.5%] h-0.5 bg-gray-200" />
-            {/* Primary progress line */}
-            <div
-              className="absolute top-[18px] left-[12.5%] h-0.5 bg-primary transition-all duration-300"
-              style={{ width: `${(step / (STEPS.length - 1)) * 75}%` }}
+          <Field label="Raw CV text">
+            <textarea
+              value={cvForm.rawText}
+              onChange={(event) =>
+                setCvForm((prev) => ({ ...prev, rawText: event.target.value }))
+              }
+              rows={12}
+              className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              placeholder="Paste isi CV di sini..."
             />
-            {STEPS.map((s, i) => (
-              <div key={s.number} className="relative z-10 flex flex-col items-center" style={{ width: '25%' }}>
-                <div className={`w-9 h-9 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-colors ${i <= step ? 'bg-primary border-primary text-white' : 'bg-white border-gray-200 text-gray-400'}`}>
-                  {s.number}
-                </div>
-                <p className={`text-[10px] font-semibold text-center mt-1.5 leading-tight ${i <= step ? 'text-primary' : 'text-gray-400'}`}>{s.title}</p>
-                <p className="text-[9px] text-gray-400 text-center leading-tight">({s.subtitle})</p>
-              </div>
-            ))}
-          </div>
+          </Field>
 
-          {/* Active Step Card */}
-          <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-gradient-to-r from-blue-50/60 to-white p-5 mb-7 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-3xl font-extrabold text-primary leading-none">{current.number}</span>
-                </div>
-                <h2 className="text-base font-bold text-gray-800 mb-1">
-                  <em>{current.title}</em> <span className="font-normal not-italic text-sm text-gray-500">({current.subtitle})</span>
-                </h2>
-                <p className="text-xs text-gray-500 leading-relaxed">{current.description}</p>
-              </div>
-              {STEP_IMAGES[step] ? (
-                <Image
-                  src={STEP_IMAGES[step]!}
-                  alt={current.title}
-                  width={80}
-                  height={80}
-                  className="w-20 h-20 rounded-xl shrink-0 object-cover"
-                />
-              ) : (
-                <div
-                  className="w-20 h-20 rounded-xl shrink-0"
-                  style={{ background: 'linear-gradient(135deg, #2701C3 0%, #FF6118 100%)', opacity: 0.85 }}
-                />
-              )}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-gray-500">
+              Endpoint: POST /job-seeker/onboarding/cv/parse
+            </p>
+            <Button type="submit" disabled={parsing} className="rounded-full px-6">
+              {parsing ? 'Memproses…' : 'Parse dan Simpan CV'}
+            </Button>
+          </div>
+        </form>
+
+        {parseResult && (
+          <section className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+            <p className="text-sm font-semibold text-emerald-800">
+              CV berhasil diparsing
+            </p>
+            <div className="mt-3 grid gap-3 text-sm md:grid-cols-5">
+              <Count label="Education" value={parseResult.inserted.educations} />
+              <Count label="Experience" value={parseResult.inserted.experiences} />
+              <Count label="Project" value={parseResult.inserted.projects} />
+              <Count
+                label="Certification"
+                value={parseResult.inserted.certifications}
+              />
+              <Count label="Skill" value={parseResult.inserted.skills} />
             </div>
-          </div>
+            <p className="mt-3 text-xs text-emerald-700">
+              Confidence AI: {Math.round(parseResult.confidenceScore * 100)}%
+            </p>
+          </section>
+        )}
 
-          {/* Step Content */}
-          <div className="mb-8">
-            {step === 0 && <FoundationStep value={foundation} onChange={(patch) => setFoundation((prev) => ({ ...prev, ...patch }))} />}
-            {step === 1 && <ExpertiseStep value={expertise} onChange={(patch) => setExpertise((prev) => ({ ...prev, ...patch }))} />}
-            {step === 2 && <AssessmentStep ocean={ocean} riasec={riasec} onOcean={(index, value) => setOcean((prev) => ({ ...prev, [index]: value }))} onRiasec={(item, value) => setRiasec((prev) => ({ ...prev, [item]: value }))} />}
-            {step === 3 && <VisionStep value={vision} onChange={(patch) => setVision((prev) => ({ ...prev, ...patch }))} />}
-          </div>
-
-          {/* Footer */}
-          <div className="flex justify-between">
+        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Input manual tambahan
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Pakai ini untuk melengkapi atau mengoreksi hasil parsing CV.
+              </p>
+            </div>
             <Button
+              type="button"
               variant="outline"
-              disabled={step === 0 || submitting}
-              className="rounded-full px-8 border-gray-300"
-              onClick={() => setStep((prev) => Math.max(0, prev - 1))}
+              onClick={() => router.push('/job-seeker')}
             >
-              Back
-            </Button>
-            <Button onClick={handleNext} disabled={submitting} className="rounded-full px-8 bg-primary text-white hover:bg-primary/90">
-              {submitting ? 'Menyimpan…' : isLast ? 'Selesai' : 'Continue'}
+              Ke Dashboard
             </Button>
           </div>
-        </div>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <ManualCard
+              title="Education"
+              endpoint="/job-seeker/onboarding/educations"
+              saving={saving === 'education'}
+              onSubmit={() =>
+                submitManual(
+                  'education',
+                  () =>
+                    seekerApi.createEducation({
+                      ...education,
+                      startYear: toNumberOrUndefined(education.startYear),
+                      endYear: toNumberOrUndefined(education.endYear),
+                      gpa: toNumberOrUndefined(education.gpa),
+                    }),
+                  () => setEducation(emptyEducation),
+                )
+              }
+            >
+              <select
+                value={education.educationLevel ?? ''}
+                onChange={(event) =>
+                  setEducation((prev) => ({
+                    ...prev,
+                    educationLevel: event.target.value
+                      ? (event.target.value as EducationLevel)
+                      : undefined,
+                  }))
+                }
+                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              >
+                <option value="">Education level</option>
+                {educationLevels.map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
+                ))}
+              </select>
+              <Input
+                placeholder="Institution"
+                value={education.institution ?? ''}
+                onChange={(event) =>
+                  setEducation((prev) => ({
+                    ...prev,
+                    institution: event.target.value,
+                  }))
+                }
+              />
+              <Input
+                placeholder="Major"
+                value={education.major ?? ''}
+                onChange={(event) =>
+                  setEducation((prev) => ({ ...prev, major: event.target.value }))
+                }
+              />
+              <Input
+                placeholder="Degree"
+                value={education.degree}
+                required
+                onChange={(event) =>
+                  setEducation((prev) => ({ ...prev, degree: event.target.value }))
+                }
+              />
+            </ManualCard>
+
+            <ManualCard
+              title="Experience"
+              endpoint="/job-seeker/onboarding/experiences"
+              saving={saving === 'experience'}
+              onSubmit={() =>
+                submitManual(
+                  'experience',
+                  () => seekerApi.createExperience(experience),
+                  () => setExperience(emptyExperience),
+                )
+              }
+            >
+              <Input
+                placeholder="Title"
+                value={experience.title}
+                required
+                onChange={(event) =>
+                  setExperience((prev) => ({ ...prev, title: event.target.value }))
+                }
+              />
+              <Input
+                placeholder="Organization"
+                value={experience.organization}
+                required
+                onChange={(event) =>
+                  setExperience((prev) => ({
+                    ...prev,
+                    organization: event.target.value,
+                  }))
+                }
+              />
+              <Input
+                placeholder="Experience type"
+                value={experience.experienceType}
+                required
+                onChange={(event) =>
+                  setExperience((prev) => ({
+                    ...prev,
+                    experienceType: event.target.value,
+                  }))
+                }
+              />
+              <Input
+                placeholder="Description"
+                value={experience.description ?? ''}
+                onChange={(event) =>
+                  setExperience((prev) => ({
+                    ...prev,
+                    description: event.target.value,
+                  }))
+                }
+              />
+            </ManualCard>
+
+            <ManualCard
+              title="Project"
+              endpoint="/job-seeker/onboarding/projects"
+              saving={saving === 'project'}
+              onSubmit={() =>
+                submitManual(
+                  'project',
+                  () => seekerApi.createProject(project),
+                  () => setProject(emptyProject),
+                )
+              }
+            >
+              <Input
+                placeholder="Project name"
+                value={project.projectName}
+                required
+                onChange={(event) =>
+                  setProject((prev) => ({
+                    ...prev,
+                    projectName: event.target.value,
+                  }))
+                }
+              />
+              <Input
+                placeholder="Tools used"
+                value={project.toolsUsed ?? ''}
+                onChange={(event) =>
+                  setProject((prev) => ({
+                    ...prev,
+                    toolsUsed: event.target.value,
+                  }))
+                }
+              />
+              <Input
+                placeholder="Description"
+                value={project.description ?? ''}
+                onChange={(event) =>
+                  setProject((prev) => ({
+                    ...prev,
+                    description: event.target.value,
+                  }))
+                }
+              />
+            </ManualCard>
+
+            <ManualCard
+              title="Certification"
+              endpoint="/job-seeker/onboarding/certifications"
+              saving={saving === 'certification'}
+              onSubmit={() =>
+                submitManual(
+                  'certification',
+                  () =>
+                    seekerApi.createCertification({
+                      ...certification,
+                      issuedYear: toNumberOrUndefined(certification.issuedYear),
+                    }),
+                  () => setCertification(emptyCertification),
+                )
+              }
+            >
+              <Input
+                placeholder="Certification name"
+                value={certification.certificationName}
+                required
+                onChange={(event) =>
+                  setCertification((prev) => ({
+                    ...prev,
+                    certificationName: event.target.value,
+                  }))
+                }
+              />
+              <Input
+                placeholder="Issuer"
+                value={certification.issuer}
+                required
+                onChange={(event) =>
+                  setCertification((prev) => ({
+                    ...prev,
+                    issuer: event.target.value,
+                  }))
+                }
+              />
+              <Input
+                placeholder="Issued year"
+                type="number"
+                value={certification.issuedYear ?? ''}
+                onChange={(event) =>
+                  setCertification((prev) => ({
+                    ...prev,
+                    issuedYear: event.target.value
+                      ? Number(event.target.value)
+                      : undefined,
+                  }))
+                }
+              />
+            </ManualCard>
+
+            <ManualCard
+              title="Skill"
+              endpoint="/job-seeker/onboarding/skills"
+              saving={saving === 'skill'}
+              onSubmit={() =>
+                submitManual(
+                  'skill',
+                  () => seekerApi.createSkill(skill),
+                  () => setSkill(emptySkill),
+                )
+              }
+            >
+              <Input
+                placeholder="Detected text"
+                value={skill.detectedText}
+                required
+                onChange={(event) =>
+                  setSkill((prev) => ({
+                    ...prev,
+                    detectedText: event.target.value,
+                  }))
+                }
+              />
+              <Input
+                placeholder="Inferred level"
+                value={skill.inferredLevel ?? ''}
+                onChange={(event) =>
+                  setSkill((prev) => ({
+                    ...prev,
+                    inferredLevel: event.target.value,
+                  }))
+                }
+              />
+            </ManualCard>
+          </div>
+        </section>
       </main>
     </div>
-  );
+  )
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <label className="grid gap-1.5">
+      <span className="text-xs font-semibold text-gray-700">{label}</span>
+      {children}
+    </label>
+  )
+}
+
+function Count({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl bg-white p-3">
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="mt-1 text-xl font-bold text-gray-900">{value}</p>
+    </div>
+  )
+}
+
+function ManualCard({
+  title,
+  endpoint,
+  saving,
+  children,
+  onSubmit,
+}: {
+  title: string
+  endpoint: string
+  saving: boolean
+  children: React.ReactNode
+  onSubmit: () => void
+}) {
+  return (
+    <form
+      className="grid gap-3 rounded-xl border border-gray-100 p-4"
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSubmit()
+      }}
+    >
+      <div>
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        <p className="text-xs text-gray-500">{endpoint}</p>
+      </div>
+      {children}
+      <Button type="submit" disabled={saving} className="justify-self-start">
+        {saving ? 'Menyimpan…' : `Simpan ${title}`}
+      </Button>
+    </form>
+  )
+}
+
+function toNumberOrUndefined(value: unknown): number | undefined {
+  if (value === '' || value === null || value === undefined) return undefined
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
 }

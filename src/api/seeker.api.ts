@@ -1,29 +1,34 @@
 import api from '@/lib/axios'
 import type { ApiResponse } from '@/types/api.types'
 import type {
-  AssessmentPayload,
-  DashboardResponse,
-  ExpertisePayload,
-  FoundationPayload,
-  OnboardingStepResult,
-  RoleOption,
-  VisionPayload,
+  CreateCertificationPayload,
+  CreateEducationPayload,
+  CreateExperiencePayload,
+  CreateProjectPayload,
+  CreateSkillPayload,
+  OnboardingRecordResponse,
+  ParseCvPayload,
+  ParseCvResponse,
 } from '@/types/seeker.types'
 
+const basePath = '/job-seeker/onboarding'
+
 export const seekerApi = {
-  foundation: (body: FoundationPayload) =>
-    api.post<ApiResponse<OnboardingStepResult>>('/seeker/onboarding/foundation', body),
+  parseCv: (body: ParseCvPayload) =>
+    api.post<ApiResponse<ParseCvResponse>>(`${basePath}/cv/parse`, body),
 
-  expertise: (body: ExpertisePayload) =>
-    api.post<ApiResponse<OnboardingStepResult>>('/seeker/onboarding/expertise', body),
+  createEducation: (body: CreateEducationPayload) =>
+    api.post<ApiResponse<OnboardingRecordResponse>>(`${basePath}/educations`, body),
 
-  assessment: (body: AssessmentPayload) =>
-    api.post<ApiResponse<OnboardingStepResult>>('/seeker/onboarding/assessment', body),
+  createExperience: (body: CreateExperiencePayload) =>
+    api.post<ApiResponse<OnboardingRecordResponse>>(`${basePath}/experiences`, body),
 
-  vision: (body: VisionPayload) =>
-    api.post<ApiResponse<OnboardingStepResult>>('/seeker/onboarding/vision', body),
+  createProject: (body: CreateProjectPayload) =>
+    api.post<ApiResponse<OnboardingRecordResponse>>(`${basePath}/projects`, body),
 
-  dashboard: () => api.get<ApiResponse<DashboardResponse>>('/seeker/dashboard'),
+  createCertification: (body: CreateCertificationPayload) =>
+    api.post<ApiResponse<OnboardingRecordResponse>>(`${basePath}/certifications`, body),
 
-  roles: () => api.get<ApiResponse<RoleOption[]>>('/seeker/roles'),
+  createSkill: (body: CreateSkillPayload) =>
+    api.post<ApiResponse<OnboardingRecordResponse>>(`${basePath}/skills`, body),
 }
