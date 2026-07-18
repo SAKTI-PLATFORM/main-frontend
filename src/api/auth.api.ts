@@ -18,9 +18,5 @@ export const authApi = {
   googleAuth: (body: GoogleAuthRequest) =>
     api.post<ApiResponse<AuthToken>>('/auth/google', body),
 
-  me: () =>
-    api.get<ApiResponse<UserProfile>>('/auth/me'),
-
-  logout: () =>
-    api.post<ApiResponse<null>>('/auth/logout'),
+  me: () => api.get<ApiResponse<UserProfile>>('/auth/me'),
 }
