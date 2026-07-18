@@ -259,35 +259,61 @@ export function RepeatableProfileForms({
       )}
 
       {activeStep === 5 && (
-        <div className="space-y-5">
-          <StepPanel title="Skill" description="Periksa skill yang dibaca dari CV dan tentukan tingkat kemampuanmu." detectedCount={parseResult.detected.skills}>
-            <RecordSection title="Skill" count={skills.length} onAdd={() => setSkills((items) => [...items, newSkill()])}>
-              {skills.map((entry, index) => (
-                <RecordEntry key={index} label={entry.detectedText || `Skill ${index + 1}`} onRemove={() => setSkills((items) => items.filter((_, itemIndex) => itemIndex !== index))}>
-                  <Field label="Nama skill"><Input className="h-10" value={entry.detectedText} required onChange={(event) => setSkills((items) => updateAt(items, index, { detectedText: event.target.value }))} placeholder="Contoh: SQL" /></Field>
-                  <Field label="Tingkat kemampuan"><Select value={entry.inferredLevel ?? ''} onChange={(value) => setSkills((items) => updateAt(items, index, { inferredLevel: value }))}><option value="">Pilih tingkat</option><option value="BEGINNER">Pemula</option><option value="INTERMEDIATE">Menengah</option><option value="ADVANCED">Mahir</option></Select></Field>
-                </RecordEntry>
-              ))}
-            </RecordSection>
-          </StepPanel>
+        <StepPanel title="Skill" description="Periksa skill serta estimasi jam belajar dan jam praktik kerja yang dibaca dari CV." detectedCount={parseResult.detected.skills}>
+          <div>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-foreground">Skill</h3>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{skills.length}</span>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => setSkills((items) => [...items, newSkill()])}>
+                <Plus className="size-4" />Tambah skill
+              </Button>
+            </div>
 
-          <StepPanel title="Proyek" description="Periksa nama, teknologi, periode, dan deskripsi proyek yang dibaca dari CV." detectedCount={parseResult.detected.projects}>
-            <RecordSection title="Proyek" count={projects.length} onAdd={() => setProjects((items) => [...items, newProject()])}>
-              {projects.map((entry, index) => (
-                <RecordEntry key={index} label={entry.projectName || `Proyek ${index + 1}`} onRemove={() => setProjects((items) => items.filter((_, itemIndex) => itemIndex !== index))}>
-                  <Field label="Nama proyek"><Input className="h-10" value={entry.projectName} required onChange={(event) => setProjects((items) => updateAt(items, index, { projectName: event.target.value }))} /></Field>
-                  <Field label="Teknologi"><Input className="h-10" value={entry.toolsUsed ?? ''} onChange={(event) => setProjects((items) => updateAt(items, index, { toolsUsed: event.target.value }))} placeholder="Contoh: Python, Power BI" /></Field>
-                  <Field label="Mulai"><Input className="h-10" type="date" value={entry.startDate ?? ''} onChange={(event) => setProjects((items) => updateAt(items, index, { startDate: event.target.value }))} /></Field>
-                  <Field label="Selesai"><Input className="h-10" type="date" value={entry.endDate ?? ''} onChange={(event) => setProjects((items) => updateAt(items, index, { endDate: event.target.value }))} /></Field>
-                  <Field label="Deskripsi" wide><TextArea value={entry.description ?? ''} onChange={(value) => setProjects((items) => updateAt(items, index, { description: value }))} placeholder="Masalah, solusi, kontribusi, dan hasil proyek" /></Field>
-                </RecordEntry>
+            <div className="space-y-2">
+              {skills.map((entry, index) => (
+                <article key={index} className="relative grid grid-cols-2 gap-2 rounded-lg border border-border bg-card p-3 pr-12 sm:grid-cols-[minmax(180px,2fr)_minmax(120px,1fr)_minmax(120px,1fr)_36px] sm:items-end sm:gap-3 sm:pr-3">
+                  <label className="col-span-2 grid min-w-0 gap-1 sm:col-span-1">
+                    <span className="text-[11px] font-semibold text-foreground/70">Nama skill</span>
+                    <Input className="h-9" value={entry.detectedText} required onChange={(event) => setSkills((items) => updateAt(items, index, { detectedText: event.target.value }))} placeholder="Contoh: SQL" />
+                  </label>
+                  <label className="grid min-w-0 gap-1">
+                    <span className="text-[11px] font-semibold text-foreground/70">Learning hours</span>
+                    <Input className="h-9" type="number" min="0" step="0.5" value={entry.learningHours ?? ''} onChange={(event) => setSkills((items) => updateAt(items, index, { learningHours: optionalNumber(event.target.value) }))} placeholder="120 jam" />
+                  </label>
+                  <label className="grid min-w-0 gap-1">
+                    <span className="text-[11px] font-semibold text-foreground/70">Working hours</span>
+                    <Input className="h-9" type="number" min="0" step="0.5" value={entry.workingHours ?? ''} onChange={(event) => setSkills((items) => updateAt(items, index, { workingHours: optionalNumber(event.target.value) }))} placeholder="960 jam" />
+                  </label>
+                  <Button type="button" variant="ghost" size="icon-sm" className="absolute right-2 top-2 text-red-600 hover:text-red-700 sm:static" onClick={() => setSkills((items) => items.filter((_, itemIndex) => itemIndex !== index))} title={`Hapus ${entry.detectedText || `skill ${index + 1}`}`}>
+                    <Trash2 className="size-4" />
+                    <span className="sr-only">Hapus {entry.detectedText || `skill ${index + 1}`}</span>
+                  </Button>
+                </article>
               ))}
-            </RecordSection>
-          </StepPanel>
-        </div>
+            </div>
+          </div>
+        </StepPanel>
       )}
 
       {activeStep === 6 && (
+        <StepPanel title="Proyek" description="Periksa nama, teknologi, periode, dan deskripsi proyek yang dibaca dari CV." detectedCount={parseResult.detected.projects}>
+          <RecordSection title="Proyek" count={projects.length} onAdd={() => setProjects((items) => [...items, newProject()])}>
+            {projects.map((entry, index) => (
+              <RecordEntry key={index} label={entry.projectName || `Proyek ${index + 1}`} onRemove={() => setProjects((items) => items.filter((_, itemIndex) => itemIndex !== index))}>
+                <Field label="Nama proyek"><Input className="h-10" value={entry.projectName} required onChange={(event) => setProjects((items) => updateAt(items, index, { projectName: event.target.value }))} /></Field>
+                <Field label="Teknologi"><Input className="h-10" value={entry.toolsUsed ?? ''} onChange={(event) => setProjects((items) => updateAt(items, index, { toolsUsed: event.target.value }))} placeholder="Contoh: Python, Power BI" /></Field>
+                <Field label="Mulai"><Input className="h-10" type="date" value={entry.startDate ?? ''} onChange={(event) => setProjects((items) => updateAt(items, index, { startDate: event.target.value }))} /></Field>
+                <Field label="Selesai"><Input className="h-10" type="date" value={entry.endDate ?? ''} onChange={(event) => setProjects((items) => updateAt(items, index, { endDate: event.target.value }))} /></Field>
+                <Field label="Deskripsi" wide><TextArea value={entry.description ?? ''} onChange={(value) => setProjects((items) => updateAt(items, index, { description: value }))} placeholder="Masalah, solusi, kontribusi, dan hasil proyek" /></Field>
+              </RecordEntry>
+            ))}
+          </RecordSection>
+        </StepPanel>
+      )}
+
+      {activeStep === 7 && (
         <StepPanel title="Ringkasan profil CV" description="Tinjau jumlah dan data utama yang akan disimpan ke profilmu.">
           <div className="grid gap-4 sm:grid-cols-2">
             <ReviewSection title="Identitas">
@@ -325,7 +351,7 @@ export function RepeatableProfileForms({
 
       <footer className="sticky bottom-4 z-20 mt-5 flex items-center justify-between gap-3 rounded-xl bg-card/95 p-3 shadow-sm ring-1 ring-foreground/10 backdrop-blur">
         <Button type="button" variant="outline" size="lg" onClick={onBack} disabled={saving}><ArrowLeft />Kembali</Button>
-        {activeStep < 6 ? (
+        {activeStep < 7 ? (
           <Button type="button" size="lg" onClick={continueToNext}>Lanjutkan<ArrowRight /></Button>
         ) : (
           <Button type="button" size="lg" onClick={() => void saveProfile()} disabled={saving}>{saving ? <Loader2 className="animate-spin" /> : <Save />}{saving ? 'Menyimpan...' : 'Simpan profil'}</Button>
@@ -477,8 +503,9 @@ function toCertificationPayload(item: Record<string, unknown>): CreateCertificat
 function toSkillPayload(item: Record<string, unknown>): CreateSkillPayload {
   return {
     detectedText: readString(item, 'detected_text'),
-    inferredLevel: readString(item, 'inferred_level') || undefined,
     confidenceScore: readNumber(item, 'confidence_score'),
+    learningHours: readNumber(item, 'learning_hours'),
+    workingHours: readNumber(item, 'working_hours'),
     evidenceSource: readString(item, 'evidence_source') || 'cv_text',
     evidenceStrength: readString(item, 'evidence_strength') || undefined,
   }

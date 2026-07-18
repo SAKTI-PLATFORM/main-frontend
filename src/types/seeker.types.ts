@@ -175,8 +175,9 @@ export interface CreateCertificationPayload {
 export interface CreateSkillPayload {
   skillId?: string
   detectedText: string
-  inferredLevel?: string
   confidenceScore?: number
+  learningHours?: number
+  workingHours?: number
   evidenceSource?: string
   evidenceStrength?: string
 }
