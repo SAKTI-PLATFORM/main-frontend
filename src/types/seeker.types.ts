@@ -1,6 +1,7 @@
 export type Gender = 'male' | 'female'
 export type EmploymentStatus = 'fresh_grad' | 'working' | 'unemployed' | 'freelance'
 export type EducationLevel = 'SMA' | 'D3' | 'S1' | 'S2' | 'S3'
+export type RecordSource = 'CV' | 'MANUAL' | 'HYBRID'
 export type FieldOfInterest =
   | 'teknologi'
   | 'keuangan'
@@ -70,15 +71,7 @@ export interface VisionPayload {
   jobTypes: JobType[]
 }
 
-export interface ParseCvPayload {
-  fileName: string
-  fileType: string
-  fileUrl: string
-  rawText: string
-  versionNumber?: number
-}
-
-export interface ParseCvInsertedCounts {
+export interface ParseCvDetectedCounts {
   educations: number
   experiences: number
   projects: number
@@ -86,8 +79,19 @@ export interface ParseCvInsertedCounts {
   skills: number
 }
 
+export interface ParsedPersonalInfo {
+  fullName: string | null
+  professionalHeadline: string | null
+  email: string | null
+  phoneNumber: string | null
+  domicile: string | null
+  linkedinUrl: string | null
+  profileSummary: string | null
+}
+
 export interface ParsedCvResult {
   confidenceScore: number
+  personalInfo: ParsedPersonalInfo
   educations: Array<Record<string, unknown>>
   experiences: Array<Record<string, unknown>>
   projects: Array<Record<string, unknown>>
@@ -95,11 +99,31 @@ export interface ParsedCvResult {
   skills: Array<Record<string, unknown>>
 }
 
+export interface UpdateIdentityPayload {
+  fullName: string
+  email: string
+  professionalHeadline?: string
+  phoneNumber?: string
+  domicile?: string
+  linkedinUrl?: string
+  profileSummary?: string
+}
+
+export interface IdentityResponse {
+  fullName: string
+  email: string
+  professionalHeadline: string | null
+  phoneNumber: string | null
+  domicile: string | null
+  linkedinUrl: string | null
+  profileSummary: string | null
+}
+
 export interface ParseCvResponse {
   cvId: string
   parsedId: string
   confidenceScore: number
-  inserted: ParseCvInsertedCounts
+  detected: ParseCvDetectedCounts
   parsedResult: ParsedCvResult
 }
 
@@ -108,6 +132,7 @@ export interface OnboardingRecordResponse {
 }
 
 export interface CreateEducationPayload {
+  source?: RecordSource
   educationLevel?: EducationLevel
   institution?: string
   major?: string
@@ -119,6 +144,7 @@ export interface CreateEducationPayload {
 }
 
 export interface CreateExperiencePayload {
+  source?: RecordSource
   title: string
   organization: string
   experienceType: string
@@ -130,6 +156,7 @@ export interface CreateExperiencePayload {
 }
 
 export interface CreateProjectPayload {
+  source?: RecordSource
   projectName: string
   description?: string
   toolsUsed?: string
@@ -138,6 +165,7 @@ export interface CreateProjectPayload {
 }
 
 export interface CreateCertificationPayload {
+  source?: RecordSource
   certificationName: string
   issuer: string
   issuedYear?: number

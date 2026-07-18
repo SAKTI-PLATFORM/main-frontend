@@ -11,6 +11,9 @@ export interface UserProfile {
   phoneNumber?: string | null
   photoUrl?: string | null
   domicile?: string | null
+  professionalHeadline?: string | null
+  linkedinUrl?: string | null
+  profileSummary?: string | null
   roles: UserRoleEnum[]
   createdAt: string
   updatedAt: string

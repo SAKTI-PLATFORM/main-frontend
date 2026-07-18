@@ -7,15 +7,24 @@ import type {
   CreateProjectPayload,
   CreateSkillPayload,
   OnboardingRecordResponse,
-  ParseCvPayload,
   ParseCvResponse,
+  IdentityResponse,
+  UpdateIdentityPayload,
 } from '@/types/seeker.types'
 
 const basePath = '/job-seeker/onboarding'
 
 export const seekerApi = {
-  parseCv: (body: ParseCvPayload) =>
-    api.post<ApiResponse<ParseCvResponse>>(`${basePath}/cv/parse`, body),
+  parseCv: (cv: File, versionNumber?: number) => {
+    const body = new FormData()
+    body.append('cv', cv)
+    if (versionNumber) body.append('versionNumber', String(versionNumber))
+
+    return api.post<ApiResponse<ParseCvResponse>>(`${basePath}/cv/parse`, body)
+  },
+
+  updateIdentity: (body: UpdateIdentityPayload) =>
+    api.put<ApiResponse<IdentityResponse>>(`${basePath}/identity`, body),
 
   createEducation: (body: CreateEducationPayload) =>
     api.post<ApiResponse<OnboardingRecordResponse>>(`${basePath}/educations`, body),

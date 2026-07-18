@@ -1,548 +1,417 @@
 'use client'
 
-import Image from 'next/image'
-import { useRouter } from 'next/navigation'
-import { FormEvent, useState } from 'react'
 import { seekerApi } from '@/api/seeker.api'
+import { authApi } from '@/api/auth.api'
+import { TopBar } from '@/components/dashboard/top-bar'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import type {
-  CreateCertificationPayload,
-  CreateEducationPayload,
-  CreateExperiencePayload,
-  CreateProjectPayload,
-  CreateSkillPayload,
-  EducationLevel,
-  ParseCvResponse,
-} from '@/types/seeker.types'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import type { ParseCvResponse } from '@/types/seeker.types'
+import type { UserProfile } from '@/types/auth.types'
 import { handleApiError } from '@/utils/api-error'
 import { Toast } from '@/utils/toast'
+import {
+  AlertCircle,
+  Check,
+  CheckCircle2,
+  Loader2,
+  Sparkles,
+  UploadCloud,
+  X,
+} from 'lucide-react'
+import Image from 'next/image'
+import { ChangeEvent, DragEvent, KeyboardEvent, useEffect, useRef, useState } from 'react'
+import { RepeatableProfileForms } from './repeatable-profile-forms'
 
-const educationLevels: EducationLevel[] = ['SMA', 'D3', 'S1', 'S2', 'S3']
+type UploadPhase = 'idle' | 'uploading' | 'success' | 'error'
 
-const emptyEducation: CreateEducationPayload = {
-  degree: '',
-  institution: '',
-  major: '',
-}
+const MAX_CV_SIZE = 10 * 1024 * 1024
 
-const emptyExperience: CreateExperiencePayload = {
-  title: '',
-  organization: '',
-  experienceType: 'WORK',
-}
+const wizardSteps = [
+  {
+    label: 'Upload CV',
+    title: 'Upload CV kamu',
+    description: 'Unggah CV terbaru dalam format PDF. Sistem akan membaca isinya agar dapat kamu tinjau dan koreksi.',
+  },
+  {
+    label: 'Identitas',
+    title: 'Periksa informasi pribadi',
+    description: 'Koreksi data identitas dan ringkasan profesional yang dibaca dari bagian header CV.',
+  },
+  {
+    label: 'Pengalaman',
+    title: 'Periksa pengalaman',
+    description: 'Lihat jumlah pengalaman yang terdeteksi dan tambahkan riwayat yang belum tercantum di CV.',
+  },
+  {
+    label: 'Pendidikan',
+    title: 'Periksa pendidikan',
+    description: 'Lengkapi pendidikan formal yang belum berhasil dibaca dari dokumen.',
+  },
+  {
+    label: 'Sertifikasi',
+    title: 'Lengkapi sertifikasi',
+    description: 'Tambahkan sertifikasi profesional lain yang relevan dengan tujuan kariermu.',
+  },
+  {
+    label: 'Skill & Proyek',
+    title: 'Lengkapi skill dan proyek',
+    description: 'Tambahkan skill atau proyek yang belum ditemukan pada proses parsing CV.',
+  },
+  {
+    label: 'Tinjau',
+    title: 'Tinjau profil',
+    description: 'Pastikan seluruh data hasil tinjauan sudah sesuai sebelum menyimpan profil.',
+  },
+] as const
 
-const emptyProject: CreateProjectPayload = {
-  projectName: '',
-  description: '',
-  toolsUsed: '',
-}
-
-const emptyCertification: CreateCertificationPayload = {
-  certificationName: '',
-  issuer: '',
-}
-
-const emptySkill: CreateSkillPayload = {
-  detectedText: '',
-  evidenceSource: 'manual',
-}
+const onboardingJourney = [
+  { title: 'Mulai', caption: 'Upload CV' },
+  { title: 'Identitas', caption: 'Konteks dasar' },
+  { title: 'Psikometri', caption: 'OCEAN · RIASEC' },
+  { title: 'Double Diamond', caption: 'Asesmen terpersonalisasi' },
+  { title: 'Preferensi', caption: 'Lokasi · Gaji · Timeline' },
+  { title: 'Profil Lengkap', caption: 'Siap matching' },
+] as const
 
 export function OnboardingWizard() {
-  const router = useRouter()
-  const [parsing, setParsing] = useState(false)
-  const [saving, setSaving] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [currentStep, setCurrentStep] = useState(0)
+  const [phase, setPhase] = useState<UploadPhase>('idle')
+  const [dragActive, setDragActive] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [parseResult, setParseResult] = useState<ParseCvResponse | null>(null)
-  const [cvForm, setCvForm] = useState({
-    fileName: 'cv.txt',
-    fileType: 'text/plain',
-    fileUrl: 'manual://cv-text',
-    rawText: '',
-  })
-  const [education, setEducation] = useState<CreateEducationPayload>(emptyEducation)
-  const [experience, setExperience] = useState<CreateExperiencePayload>(emptyExperience)
-  const [project, setProject] = useState<CreateProjectPayload>(emptyProject)
-  const [certification, setCertification] =
-    useState<CreateCertificationPayload>(emptyCertification)
-  const [skill, setSkill] = useState<CreateSkillPayload>(emptySkill)
+  const [accountProfile, setAccountProfile] = useState<UserProfile | null>(null)
+  const [errorMessage, setErrorMessage] = useState('')
 
-  async function submitCv(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!cvForm.rawText.trim()) {
-      Toast.error('Paste isi text CV dulu.')
+  const step = wizardSteps[currentStep]
+  const isUploading = phase === 'uploading'
+
+  useEffect(() => {
+    let active = true
+    void authApi.me().then((response) => {
+      if (active) setAccountProfile(response.data.data)
+    }).catch(() => undefined)
+    return () => { active = false }
+  }, [])
+
+  async function processCv(file: File) {
+    const validationError = validatePdf(file)
+    if (validationError) {
+      setSelectedFile(null)
+      setErrorMessage(validationError)
+      setPhase('error')
+      Toast.error(validationError)
       return
     }
 
-    setParsing(true)
+    setSelectedFile(file)
+    setParseResult(null)
+    setErrorMessage('')
+    setPhase('uploading')
+
     try {
-      const response = await seekerApi.parseCv({
-        ...cvForm,
-        rawText: cvForm.rawText.trim(),
-      })
+      const response = await seekerApi.parseCv(file)
+      try {
+        const profileResponse = await authApi.me()
+        setAccountProfile(profileResponse.data.data)
+      } catch {
+        // Parsing remains usable when profile refresh is temporarily unavailable.
+      }
       setParseResult(response.data.data)
-      window.localStorage.setItem('sakti:onboarding:cvParsed', 'true')
-      Toast.success('CV berhasil diparsing dan disimpan.')
+      setPhase('success')
+      Toast.success('PDF berhasil dibaca. Tinjau data yang terdeteksi.')
     } catch (error) {
-      handleApiError(error)
-    } finally {
-      setParsing(false)
+      const parsed = handleApiError(error)
+      setErrorMessage(parsed.message)
+      setPhase('error')
     }
   }
 
-  async function submitManual<T>(
-    key: string,
-    action: () => Promise<T>,
-    afterSave: () => void,
-  ) {
-    setSaving(key)
-    try {
-      await action()
-      afterSave()
-      window.localStorage.setItem('sakti:onboarding:cvParsed', 'true')
-      Toast.success('Data berhasil disimpan.')
-    } catch (error) {
-      handleApiError(error)
-    } finally {
-      setSaving(null)
+  function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (file) void processCv(file)
+    event.target.value = ''
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    setDragActive(false)
+    if (isUploading) return
+
+    const file = event.dataTransfer.files?.[0]
+    if (file) void processCv(file)
+  }
+
+  function resetUpload() {
+    setCurrentStep(0)
+    setPhase('idle')
+    setSelectedFile(null)
+    setParseResult(null)
+    setErrorMessage('')
+    setDragActive(false)
+  }
+
+  function openFilePicker() {
+    if (!isUploading) inputRef.current?.click()
+  }
+
+  function handleUploadKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      openFilePicker()
     }
+  }
+
+  function navigateToStep(index: number) {
+    if (index > 0 && !parseResult) {
+      Toast.info('Unggah dan proses PDF terlebih dahulu.')
+      return
+    }
+    setCurrentStep(index)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <header className="flex items-center border-b border-gray-100 px-6 py-4">
-        <Image
-          src="/logo-color.png"
-          alt="SAKTI Ai"
-          width={120}
-          height={40}
-          className="h-10 w-auto"
-          priority
-        />
-      </header>
+    <div className="flex min-h-screen overflow-x-hidden bg-muted/30">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card px-3 py-5 md:flex">
+        <div className="flex items-center px-2 pb-6">
+          <Image src="/logo-color.png" alt="SAKTI AI" width={120} height={40} className="h-9 w-auto" priority />
+        </div>
 
-      <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
-        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold text-primary">Tahap 01</p>
-          <h1 className="mt-1 text-2xl font-bold text-gray-900">
-            Parse CV untuk memulai onboarding
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-500">
-            Paste text CV yang sudah diekstrak dari PDF/DOCX. Backend akan
-            memanggil SAKTI-AI, lalu menyimpan education, experience, project,
-            certification, dan skill awal ke database.
-          </p>
-        </section>
+        <nav aria-label="Tahapan onboarding" className="flex flex-col gap-1">
+          {onboardingJourney.map((item, index) => {
+            const active = index === (currentStep === 0 ? 0 : 1)
+            return (
+              <div
+                key={item.title}
+                className={`grid min-h-14 w-full grid-cols-[24px_1fr] items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
+                  active
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                <span className={`flex size-6 items-center justify-center rounded-full text-[11px] font-semibold ${active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                  {index + 1}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">{item.title}</span>
+                  <span className={`mt-0.5 block text-xs leading-4 ${active ? 'text-primary/65' : 'text-muted-foreground/70'}`}>{item.caption}</span>
+                </span>
+              </div>
+            )
+          })}
+        </nav>
 
-        <form
-          onSubmit={submitCv}
-          className="grid gap-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
-        >
-          <div className="grid gap-3 md:grid-cols-3">
-            <Field label="File name">
-              <Input
-                value={cvForm.fileName}
-                onChange={(event) =>
-                  setCvForm((prev) => ({ ...prev, fileName: event.target.value }))
-                }
-              />
-            </Field>
-            <Field label="File type">
-              <Input
-                value={cvForm.fileType}
-                onChange={(event) =>
-                  setCvForm((prev) => ({ ...prev, fileType: event.target.value }))
-                }
-              />
-            </Field>
-            <Field label="File URL">
-              <Input
-                value={cvForm.fileUrl}
-                onChange={(event) =>
-                  setCvForm((prev) => ({ ...prev, fileUrl: event.target.value }))
-                }
-              />
-            </Field>
-          </div>
+        <div className="mt-auto rounded-lg bg-muted/60 p-3 text-xs leading-5 text-muted-foreground">
+          Selesaikan setiap tahap untuk membuka insight dan rekomendasi di dashboard.
+        </div>
+      </aside>
 
-          <Field label="Raw CV text">
-            <textarea
-              value={cvForm.rawText}
-              onChange={(event) =>
-                setCvForm((prev) => ({ ...prev, rawText: event.target.value }))
-              }
-              rows={12}
-              className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-              placeholder="Paste isi CV di sini..."
-            />
-          </Field>
-
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-gray-500">
-              Endpoint: POST /job-seeker/onboarding/cv/parse
-            </p>
-            <Button type="submit" disabled={parsing} className="rounded-full px-6">
-              {parsing ? 'Memproses…' : 'Parse dan Simpan CV'}
-            </Button>
-          </div>
-        </form>
-
-        {parseResult && (
-          <section className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
-            <p className="text-sm font-semibold text-emerald-800">
-              CV berhasil diparsing
-            </p>
-            <div className="mt-3 grid gap-3 text-sm md:grid-cols-5">
-              <Count label="Education" value={parseResult.inserted.educations} />
-              <Count label="Experience" value={parseResult.inserted.experiences} />
-              <Count label="Project" value={parseResult.inserted.projects} />
-              <Count
-                label="Certification"
-                value={parseResult.inserted.certifications}
-              />
-              <Count label="Skill" value={parseResult.inserted.skills} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar />
+        <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6">
+          <div className="mx-auto w-[calc(100vw-2rem)] min-w-0 max-w-6xl sm:w-[calc(100vw-3rem)] md:w-full">
+            <header className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">{step.title}</h1>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">{step.description}</p>
             </div>
-            <p className="mt-3 text-xs text-emerald-700">
-              Confidence AI: {Math.round(parseResult.confidenceScore * 100)}%
-            </p>
-          </section>
+            </header>
+
+          <nav aria-label="Tahapan pengisian CV" className="mb-6 w-full max-w-full overflow-x-auto pb-2">
+            <div className="grid min-w-[760px] grid-cols-7">
+              {wizardSteps.map((item, index) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => navigateToStep(index)}
+                  className="group relative flex flex-col items-center gap-2 text-center"
+                >
+                  <span className="absolute left-0 right-0 top-5 h-px bg-border group-first:left-1/2 group-last:right-1/2" />
+                  <span className={`relative z-10 flex size-10 items-center justify-center rounded-full text-sm font-bold ${index === currentStep ? 'bg-primary text-primary-foreground ring-4 ring-primary/10' : parseResult && index < currentStep ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground'}`}>
+                    {parseResult && index < currentStep ? <Check className="size-4" /> : index + 1}
+                  </span>
+                  <span className={`text-xs ${index === currentStep ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </nav>
+
+          {currentStep === 0 ? (
+            <UploadStep
+              inputRef={inputRef}
+              selectedFile={selectedFile}
+              phase={phase}
+              dragActive={dragActive}
+              errorMessage={errorMessage}
+              parseResult={parseResult}
+              onInputChange={handleInputChange}
+              onOpenPicker={openFilePicker}
+              onUploadKeyDown={handleUploadKeyDown}
+              onDrop={handleDrop}
+              onDragActive={setDragActive}
+              onReset={resetUpload}
+              onContinue={() => navigateToStep(1)}
+            />
+          ) : parseResult ? (
+            <RepeatableProfileForms
+              activeStep={currentStep}
+              parseResult={parseResult}
+              accountProfile={accountProfile}
+              onBack={() => navigateToStep(currentStep - 1)}
+              onNext={() => navigateToStep(currentStep + 1)}
+            />
+          ) : null}
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}
+
+function UploadStep({
+  inputRef,
+  selectedFile,
+  phase,
+  dragActive,
+  errorMessage,
+  parseResult,
+  onInputChange,
+  onOpenPicker,
+  onUploadKeyDown,
+  onDrop,
+  onDragActive,
+  onReset,
+  onContinue,
+}: {
+  inputRef: React.RefObject<HTMLInputElement | null>
+  selectedFile: File | null
+  phase: UploadPhase
+  dragActive: boolean
+  errorMessage: string
+  parseResult: ParseCvResponse | null
+  onInputChange: (event: ChangeEvent<HTMLInputElement>) => void
+  onOpenPicker: () => void
+  onUploadKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void
+  onDrop: (event: DragEvent<HTMLDivElement>) => void
+  onDragActive: (active: boolean) => void
+  onReset: () => void
+  onContinue: () => void
+}) {
+  const uploading = phase === 'uploading'
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
+          <div>
+            <CardTitle>Unggah CV</CardTitle>
+            <CardDescription className="mt-1">Gunakan PDF berbasis teks dengan ukuran maksimal 10 MB.</CardDescription>
+          </div>
+          <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-900">
+            <Sparkles className="size-4 text-blue-600" />
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          <input ref={inputRef} type="file" accept=".pdf,application/pdf" className="hidden" onChange={onInputChange} disabled={uploading} />
+
+        {!selectedFile ? (
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label="Pilih atau jatuhkan PDF CV"
+            onClick={onOpenPicker}
+            onKeyDown={onUploadKeyDown}
+            onDragEnter={(event) => { event.preventDefault(); onDragActive(true) }}
+            onDragOver={(event) => { event.preventDefault(); onDragActive(true) }}
+            onDragLeave={(event) => { event.preventDefault(); onDragActive(false) }}
+            onDrop={onDrop}
+            className={`flex min-h-72 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center outline-none transition focus-visible:ring-4 focus-visible:ring-primary/15 ${dragActive ? 'border-primary bg-primary/5' : 'border-border bg-muted/30 hover:border-primary/60 hover:bg-primary/[0.03]'}`}
+          >
+            <span className="flex size-16 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <UploadCloud className="size-8" />
+            </span>
+            <h3 className="mt-5 text-lg font-semibold text-foreground">Tarik dan lepas PDF di sini</h3>
+            <p className="mt-2 text-sm text-muted-foreground">Hanya PDF, maksimal 10 MB.</p>
+            <Button type="button" size="lg" className="pointer-events-none mt-5" tabIndex={-1}>Pilih PDF CV</Button>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-border bg-muted/30 p-4 sm:p-5">
+            <div className="flex items-start gap-4">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-red-100 text-xs font-bold text-red-700">PDF</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-foreground">{selectedFile.name}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
+                <div className="mt-3 flex items-center gap-2 text-sm">
+                  {uploading && <Loader2 className="size-4 animate-spin text-primary" />}
+                  {phase === 'success' && <CheckCircle2 className="size-4 text-emerald-600" />}
+                  {phase === 'error' && <AlertCircle className="size-4 text-red-600" />}
+                  <span className={phase === 'error' ? 'text-red-700' : phase === 'success' ? 'text-emerald-700' : 'text-muted-foreground'}>
+                    {uploading ? 'Mengekstrak teks dan memetakan data...' : phase === 'success' ? 'CV berhasil diproses' : errorMessage}
+                  </span>
+                </div>
+              </div>
+              {!uploading && (
+                <Button type="button" variant="ghost" size="icon" onClick={onReset} title="Ganti PDF">
+                  <X /><span className="sr-only">Ganti PDF</span>
+                </Button>
+              )}
+            </div>
+            {uploading && <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full w-2/3 animate-pulse rounded-full bg-primary" /></div>}
+          </div>
         )}
 
-        <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Input manual tambahan
-              </h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Pakai ini untuk melengkapi atau mengoreksi hasil parsing CV.
-              </p>
+        {phase === 'error' && !selectedFile && (
+          <div className="mt-4 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <AlertCircle className="mt-0.5 size-5 shrink-0" /><span>{errorMessage}</span>
+          </div>
+        )}
+
+        {parseResult && (
+          <div className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-5">
+            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-900"><CheckCircle2 className="size-5" />CV berhasil dibaca dan siap ditinjau</div>
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+              {summaryCounts(parseResult).map(([label, value]) => (
+                <div key={label} className="rounded-lg bg-card p-3 text-center ring-1 ring-foreground/5"><strong className="block text-xl text-foreground">{value}</strong><span className="text-xs text-muted-foreground">{label}</span></div>
+              ))}
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push('/job-seeker')}
-            >
-              Ke Dashboard
-            </Button>
           </div>
+        )}
+        </CardContent>
+      </Card>
 
-          <div className="mt-5 grid gap-4 lg:grid-cols-2">
-            <ManualCard
-              title="Education"
-              endpoint="/job-seeker/onboarding/educations"
-              saving={saving === 'education'}
-              onSubmit={() =>
-                submitManual(
-                  'education',
-                  () =>
-                    seekerApi.createEducation({
-                      ...education,
-                      startYear: toNumberOrUndefined(education.startYear),
-                      endYear: toNumberOrUndefined(education.endYear),
-                      gpa: toNumberOrUndefined(education.gpa),
-                    }),
-                  () => setEducation(emptyEducation),
-                )
-              }
-            >
-              <select
-                value={education.educationLevel ?? ''}
-                onChange={(event) =>
-                  setEducation((prev) => ({
-                    ...prev,
-                    educationLevel: event.target.value
-                      ? (event.target.value as EducationLevel)
-                      : undefined,
-                  }))
-                }
-                className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-              >
-                <option value="">Education level</option>
-                {educationLevels.map((level) => (
-                  <option key={level} value={level}>
-                    {level}
-                  </option>
-                ))}
-              </select>
-              <Input
-                placeholder="Institution"
-                value={education.institution ?? ''}
-                onChange={(event) =>
-                  setEducation((prev) => ({
-                    ...prev,
-                    institution: event.target.value,
-                  }))
-                }
-              />
-              <Input
-                placeholder="Major"
-                value={education.major ?? ''}
-                onChange={(event) =>
-                  setEducation((prev) => ({ ...prev, major: event.target.value }))
-                }
-              />
-              <Input
-                placeholder="Degree"
-                value={education.degree}
-                required
-                onChange={(event) =>
-                  setEducation((prev) => ({ ...prev, degree: event.target.value }))
-                }
-              />
-            </ManualCard>
 
-            <ManualCard
-              title="Experience"
-              endpoint="/job-seeker/onboarding/experiences"
-              saving={saving === 'experience'}
-              onSubmit={() =>
-                submitManual(
-                  'experience',
-                  () => seekerApi.createExperience(experience),
-                  () => setExperience(emptyExperience),
-                )
-              }
-            >
-              <Input
-                placeholder="Title"
-                value={experience.title}
-                required
-                onChange={(event) =>
-                  setExperience((prev) => ({ ...prev, title: event.target.value }))
-                }
-              />
-              <Input
-                placeholder="Organization"
-                value={experience.organization}
-                required
-                onChange={(event) =>
-                  setExperience((prev) => ({
-                    ...prev,
-                    organization: event.target.value,
-                  }))
-                }
-              />
-              <Input
-                placeholder="Experience type"
-                value={experience.experienceType}
-                required
-                onChange={(event) =>
-                  setExperience((prev) => ({
-                    ...prev,
-                    experienceType: event.target.value,
-                  }))
-                }
-              />
-              <Input
-                placeholder="Description"
-                value={experience.description ?? ''}
-                onChange={(event) =>
-                  setExperience((prev) => ({
-                    ...prev,
-                    description: event.target.value,
-                  }))
-                }
-              />
-            </ManualCard>
-
-            <ManualCard
-              title="Project"
-              endpoint="/job-seeker/onboarding/projects"
-              saving={saving === 'project'}
-              onSubmit={() =>
-                submitManual(
-                  'project',
-                  () => seekerApi.createProject(project),
-                  () => setProject(emptyProject),
-                )
-              }
-            >
-              <Input
-                placeholder="Project name"
-                value={project.projectName}
-                required
-                onChange={(event) =>
-                  setProject((prev) => ({
-                    ...prev,
-                    projectName: event.target.value,
-                  }))
-                }
-              />
-              <Input
-                placeholder="Tools used"
-                value={project.toolsUsed ?? ''}
-                onChange={(event) =>
-                  setProject((prev) => ({
-                    ...prev,
-                    toolsUsed: event.target.value,
-                  }))
-                }
-              />
-              <Input
-                placeholder="Description"
-                value={project.description ?? ''}
-                onChange={(event) =>
-                  setProject((prev) => ({
-                    ...prev,
-                    description: event.target.value,
-                  }))
-                }
-              />
-            </ManualCard>
-
-            <ManualCard
-              title="Certification"
-              endpoint="/job-seeker/onboarding/certifications"
-              saving={saving === 'certification'}
-              onSubmit={() =>
-                submitManual(
-                  'certification',
-                  () =>
-                    seekerApi.createCertification({
-                      ...certification,
-                      issuedYear: toNumberOrUndefined(certification.issuedYear),
-                    }),
-                  () => setCertification(emptyCertification),
-                )
-              }
-            >
-              <Input
-                placeholder="Certification name"
-                value={certification.certificationName}
-                required
-                onChange={(event) =>
-                  setCertification((prev) => ({
-                    ...prev,
-                    certificationName: event.target.value,
-                  }))
-                }
-              />
-              <Input
-                placeholder="Issuer"
-                value={certification.issuer}
-                required
-                onChange={(event) =>
-                  setCertification((prev) => ({
-                    ...prev,
-                    issuer: event.target.value,
-                  }))
-                }
-              />
-              <Input
-                placeholder="Issued year"
-                type="number"
-                value={certification.issuedYear ?? ''}
-                onChange={(event) =>
-                  setCertification((prev) => ({
-                    ...prev,
-                    issuedYear: event.target.value
-                      ? Number(event.target.value)
-                      : undefined,
-                  }))
-                }
-              />
-            </ManualCard>
-
-            <ManualCard
-              title="Skill"
-              endpoint="/job-seeker/onboarding/skills"
-              saving={saving === 'skill'}
-              onSubmit={() =>
-                submitManual(
-                  'skill',
-                  () => seekerApi.createSkill(skill),
-                  () => setSkill(emptySkill),
-                )
-              }
-            >
-              <Input
-                placeholder="Detected text"
-                value={skill.detectedText}
-                required
-                onChange={(event) =>
-                  setSkill((prev) => ({
-                    ...prev,
-                    detectedText: event.target.value,
-                  }))
-                }
-              />
-              <Input
-                placeholder="Inferred level"
-                value={skill.inferredLevel ?? ''}
-                onChange={(event) =>
-                  setSkill((prev) => ({
-                    ...prev,
-                    inferredLevel: event.target.value,
-                  }))
-                }
-              />
-            </ManualCard>
-          </div>
-        </section>
-      </main>
-    </div>
+      {parseResult && <div className="sticky bottom-4 mt-5 flex justify-end rounded-xl bg-card/95 p-3 shadow-sm ring-1 ring-foreground/10 backdrop-blur"><Button type="button" size="lg" onClick={onContinue}>Periksa data berikutnya <Check /></Button></div>}
+    </>
   )
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string
-  children: React.ReactNode
-}) {
-  return (
-    <label className="grid gap-1.5">
-      <span className="text-xs font-semibold text-gray-700">{label}</span>
-      {children}
-    </label>
-  )
+export function summaryCounts(result: ParseCvResponse): Array<[string, number]> {
+  return [
+    ['Pengalaman', result.detected.experiences],
+    ['Pendidikan', result.detected.educations],
+    ['Sertifikasi', result.detected.certifications],
+    ['Skill', result.detected.skills],
+    ['Proyek', result.detected.projects],
+  ]
 }
 
-function Count({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-xl bg-white p-3">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="mt-1 text-xl font-bold text-gray-900">{value}</p>
-    </div>
-  )
+function validatePdf(file: File): string | null {
+  if (!file.name.toLowerCase().endsWith('.pdf')) return 'Pilih file dengan format PDF.'
+  if (file.type && file.type !== 'application/pdf') return 'Pilih file PDF yang valid.'
+  if (file.size === 0) return 'File PDF kosong.'
+  if (file.size > MAX_CV_SIZE) return 'Ukuran PDF melebihi batas maksimal 10 MB.'
+  return null
 }
 
-function ManualCard({
-  title,
-  endpoint,
-  saving,
-  children,
-  onSubmit,
-}: {
-  title: string
-  endpoint: string
-  saving: boolean
-  children: React.ReactNode
-  onSubmit: () => void
-}) {
-  return (
-    <form
-      className="grid gap-3 rounded-xl border border-gray-100 p-4"
-      onSubmit={(event) => {
-        event.preventDefault()
-        onSubmit()
-      }}
-    >
-      <div>
-        <h3 className="font-semibold text-gray-900">{title}</h3>
-        <p className="text-xs text-gray-500">{endpoint}</p>
-      </div>
-      {children}
-      <Button type="submit" disabled={saving} className="justify-self-start">
-        {saving ? 'Menyimpan…' : `Simpan ${title}`}
-      </Button>
-    </form>
-  )
-}
-
-function toNumberOrUndefined(value: unknown): number | undefined {
-  if (value === '' || value === null || value === undefined) return undefined
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : undefined
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
