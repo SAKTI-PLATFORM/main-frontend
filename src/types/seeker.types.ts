@@ -271,6 +271,10 @@ export interface RoleOption {
 export interface DashboardResponse {
   profile: {
     fullName: string
+    professionalHeadline: string | null
+    domicile: string | null
+    linkedinUrl: string | null
+    profileSummary: string | null
     employmentStatus: string | null
     educationLevel: string | null
     field: string | null

@@ -24,6 +24,11 @@ export function ProfileCard({ profile }: ProfileCardProps) {
         </div>
         <div>
           <p className="text-lg font-semibold leading-tight">{profile.fullName}</p>
+          {profile.professionalHeadline && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {profile.professionalHeadline}
+            </p>
+          )}
           {tags.length > 0 && (
             <div className="mt-2 flex flex-wrap justify-center gap-1.5">
               {tags.map((tag) => (
@@ -35,7 +40,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
           )}
         </div>
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
-          <MapPin className="size-3.5" /> Indonesia
+          <MapPin className="size-3.5" /> {profile.domicile || 'Indonesia'}
         </p>
         <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
           Open for Opportunities

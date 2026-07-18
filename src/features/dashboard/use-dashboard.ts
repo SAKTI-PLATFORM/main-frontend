@@ -30,6 +30,10 @@ export function useDashboard(): DashboardState {
           data: {
             profile: {
               fullName: profile.fullName,
+              professionalHeadline: profile.professionalHeadline ?? null,
+              domicile: profile.domicile ?? null,
+              linkedinUrl: profile.linkedinUrl ?? null,
+              profileSummary: profile.profileSummary ?? null,
               employmentStatus: null,
               educationLevel: null,
               field: null,
