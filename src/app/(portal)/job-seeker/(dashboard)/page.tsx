@@ -19,6 +19,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  MOCK_BENCHMARK,
+  MOCK_EMPLOYABILITY,
+  MOCK_INSIGHT,
+  MOCK_JOBS,
+  MOCK_SKILL_GAPS,
+} from '@/features/dashboard/data-analyst-mock'
 import { useDashboard } from '@/features/dashboard/use-dashboard'
 
 export default function SkillsDashboardPage() {
@@ -28,7 +35,23 @@ export default function SkillsDashboardPage() {
   if (state.status === 'error') return <DashboardError />
 
   const { data } = state
-  const benchmark = data.marketBenchmark
+
+  // Career data lives in the microservices DB; if it's unreachable the target
+  // role is set but benchmark comes back null → fall back to demo data so the
+  // dashboard still renders fully.
+  const usingDemo = Boolean(data.profile.targetRole) && data.marketBenchmark === null
+  const benchmark = data.marketBenchmark ?? (usingDemo ? MOCK_BENCHMARK : null)
+  const skillGaps = data.skillGaps ?? (usingDemo ? MOCK_SKILL_GAPS : null)
+  const jobs =
+    data.jobRecommendations.length > 0
+      ? data.jobRecommendations
+      : usingDemo
+        ? MOCK_JOBS
+        : []
+  const employability = usingDemo
+    ? MOCK_EMPLOYABILITY
+    : data.employabilityScore
+  const insight = data.aiInsight ?? (usingDemo ? MOCK_INSIGHT : null)
 
   return (
     <div className="space-y-6 p-6">
@@ -36,7 +59,7 @@ export default function SkillsDashboardPage() {
 
       <IncompleteOnboardingBanner completeness={data.profileCompleteness} />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid items-start gap-6 lg:grid-cols-3">
         <ProfileCard profile={data.profile} />
 
         <div className="space-y-4 lg:col-span-2">
@@ -45,9 +68,7 @@ export default function SkillsDashboardPage() {
               tone="employability"
               label="Employability Score"
               value={
-                data.employabilityScore != null
-                  ? `${Math.round(data.employabilityScore)}%`
-                  : '—'
+                employability != null ? `${Math.round(employability)}%` : '—'
               }
               caption="Komposit skill, profil & match"
             />
@@ -78,7 +99,7 @@ export default function SkillsDashboardPage() {
               <CardTitle className="text-base">Market Benchmark & Skill Demand</CardTitle>
               <CardDescription>
                 {benchmark
-                  ? `Market Demand vs skor kamu — untuk ${benchmark.role}`
+                  ? `Market Demand vs skor kamu — untuk ${benchmark.role}${usingDemo ? ' · data contoh' : ''}`
                   : 'Tersedia setelah target role di-set'}
               </CardDescription>
             </CardHeader>
@@ -95,20 +116,20 @@ export default function SkillsDashboardPage() {
         </div>
       </div>
 
-      {data.aiInsight && <AiInsight insight={data.aiInsight} />}
+      {insight && <AiInsight insight={insight} />}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Skill Gap Prioritas</CardTitle>
             <CardDescription>
-              {data.skillGaps
-                ? `Target: ${data.skillGaps.role} · total ${data.skillGaps.totalGapHours} jam`
+              {skillGaps
+                ? `Target: ${skillGaps.role} · total ${skillGaps.totalGapHours} jam`
                 : 'TalentForge'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SkillGapList gaps={data.skillGaps?.gaps ?? []} />
+            <SkillGapList gaps={skillGaps?.gaps ?? []} />
           </CardContent>
         </Card>
 
@@ -118,7 +139,7 @@ export default function SkillsDashboardPage() {
             <CardDescription>By SAKTI AI Analysis</CardDescription>
           </CardHeader>
           <CardContent>
-            <JobRecommendations jobs={data.jobRecommendations} />
+            <JobRecommendations jobs={jobs} />
           </CardContent>
         </Card>
       </div>

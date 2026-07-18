@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { seekerApi } from '@/api/seeker.api'
+import { authApi } from '@/api/auth.api'
 import type { DashboardResponse } from '@/types/seeker.types'
 import { handleApiError } from '@/utils/api-error'
 
@@ -16,16 +16,48 @@ export function useDashboard(): DashboardState {
 
   useEffect(() => {
     let active = true
-    seekerApi
-      .dashboard()
+    authApi
+      .me()
       .then((response) => {
-        if (active) setState({ status: 'ready', data: response.data.data })
+        if (!active) return
+        const profile = response.data.data
+        const cvParsed =
+          typeof window !== 'undefined' &&
+          window.localStorage.getItem('sakti:onboarding:cvParsed') === 'true'
+
+        setState({
+          status: 'ready',
+          data: {
+            profile: {
+              fullName: profile.fullName,
+              employmentStatus: null,
+              educationLevel: null,
+              field: null,
+              targetRole: null,
+            },
+            employabilityScore: null,
+            profileCompleteness: cvParsed ? 50 : 25,
+            matchedCount: 0,
+            ocean: null,
+            riasec: null,
+            topStrengthSkills: [],
+            marketBenchmark: null,
+            skillGaps: null,
+            jobRecommendations: [],
+            aiInsight: cvParsed
+              ? {
+                  narrative:
+                    'CV kamu sudah diparsing dan data awal onboarding tersimpan. Tahap berikutnya adalah review, koreksi, dan lengkapi data manual agar rekomendasi karier bisa lebih akurat.',
+                  marketReady: false,
+                  source: 'onboarding',
+                }
+              : null,
+          },
+        })
       })
       .catch((err) => {
         if (!active) return
-        // 404 = profil belum dibuat → ditangani inline (prompt onboarding),
-        // jadi jangan munculkan toast/alert untuk kasus itu.
-        handleApiError(err, { silent404: true })
+        handleApiError(err)
         setState({ status: 'error' })
       })
     return () => {

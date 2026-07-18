@@ -5,9 +5,12 @@ export interface AuthToken {
 }
 
 export interface UserProfile {
-  id: string
-  username: string
+  userId: string
+  fullName: string
   email: string
+  phoneNumber?: string | null
+  photoUrl?: string | null
+  domicile?: string | null
   roles: UserRoleEnum[]
   createdAt: string
   updatedAt: string
