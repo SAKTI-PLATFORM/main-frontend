@@ -1,4 +1,5 @@
 import { Sparkles } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import type { AiInsight as AiInsightData } from '@/types/seeker.types'
 
@@ -17,9 +18,9 @@ export function AiInsight({ insight }: AiInsightProps) {
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-primary">AI Insight</p>
             {insight.marketReady && (
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+              <Badge className="bg-emerald-100 text-[10px] text-emerald-700 hover:bg-emerald-100">
                 Market Ready
-              </span>
+              </Badge>
             )}
           </div>
           <p className="text-sm leading-relaxed text-foreground/80">

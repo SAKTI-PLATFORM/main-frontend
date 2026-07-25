@@ -1,5 +1,5 @@
 import { Sidebar } from '@/components/dashboard/sidebar'
-import { TopBar } from '@/components/dashboard/top-bar'
+import { DashboardNavigation } from '@/components/dashboard/dashboard-navigation'
 
 export default function DashboardLayout({
   children,
@@ -9,8 +9,12 @@ export default function DashboardLayout({
   return (
     <div className="flex min-h-screen bg-muted/30">
       <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar />
+      <div className="flex min-w-0 flex-1 flex-col bg-[#F7F7FA]">
+        <div className="px-4 pt-5 sm:px-6">
+          <div className="mx-auto max-w-[1540px]">
+            <DashboardNavigation />
+          </div>
+        </div>
         <main className="flex-1 overflow-x-hidden">{children}</main>
       </div>
     </div>

@@ -1,7 +1,6 @@
 'use client'
 
 import { ProfileRadarChart } from '@/components/charts/profile-radar-chart'
-import { DashboardHeader } from '@/components/dashboard/dashboard-header'
 import {
   DashboardError,
   DashboardLoading,
@@ -46,9 +45,10 @@ export default function PersonalityDashboardPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <DashboardHeader name={data.profile.fullName} />
-
-      <IncompleteOnboardingBanner completeness={data.profileCompleteness} />
+      <IncompleteOnboardingBanner
+        completeness={data.profileCompleteness}
+        session={state.session}
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

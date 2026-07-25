@@ -3,12 +3,12 @@ import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-
-const TOTAL_STEPS = 4
+import type { OnboardingSessionResponse } from '@/types/career-onboarding.types'
 
 interface IncompleteOnboardingBannerProps {
   /** profileCompleteness 0..100 (each onboarding section = 25%). */
   completeness: number
+  session: OnboardingSessionResponse | null
 }
 
 /**
@@ -17,12 +17,10 @@ interface IncompleteOnboardingBannerProps {
  */
 export function IncompleteOnboardingBanner({
   completeness,
+  session,
 }: IncompleteOnboardingBannerProps) {
   if (completeness >= 100) return null
-
-  const stepsDone = Math.round((completeness / 100) * TOTAL_STEPS)
-  // Resume at the first unfinished step (steps are completed in order).
-  const resumeStep = Math.min(stepsDone, TOTAL_STEPS - 1)
+  const currentLabel = session ? stepLabel(session) : 'Mulai onboarding'
 
   return (
     <Card className="border-amber-300/60 bg-amber-50">
@@ -33,7 +31,7 @@ export function IncompleteOnboardingBanner({
           </div>
           <div className="space-y-1.5">
             <p className="text-sm font-semibold text-amber-900">
-              Profilmu belum lengkap — {stepsDone}/{TOTAL_STEPS} langkah selesai
+              Profilmu belum lengkap — lanjut dari {currentLabel}
             </p>
             <p className="text-xs text-amber-700">
               Selesaikan onboarding untuk membuka skor employability, matching,
@@ -46,7 +44,7 @@ export function IncompleteOnboardingBanner({
           </div>
         </div>
         <Link
-          href={`/job-seeker/onboarding?step=${resumeStep}`}
+          href="/job-seeker/onboarding"
           className={`${buttonVariants()} shrink-0 gap-1.5`}
         >
           Lanjutkan Onboarding
@@ -55,4 +53,34 @@ export function IncompleteOnboardingBanner({
       </CardContent>
     </Card>
   )
+}
+
+function stepLabel(session: OnboardingSessionResponse): string {
+  if (session.current_step === 'IDENTITY') {
+    const profileSteps = [
+      'Upload CV',
+      'Identitas',
+      'Pengalaman',
+      'Pendidikan',
+      'Sertifikasi',
+      'Skill',
+      'Proyek',
+      'Tinjau profil',
+    ]
+    return profileSteps[session.profile_step] ?? 'Review profil CV'
+  }
+  return (
+    {
+      CV_UPLOAD: 'Upload CV',
+      OCEAN: 'OCEAN',
+      RIASEC: 'RIASEC',
+      DIVERGE_1: 'Eksplorasi bidang',
+      CONVERGE_1: 'Pilih bidang',
+      DIVERGE_2: 'Eksplorasi role',
+      CONVERGE_2: 'Pilih role',
+      PREFERENCE: 'Ringkasan akhir',
+      COMPLETE: 'Selesai',
+      IDENTITY: 'Review profil CV',
+    } as const
+  )[session.current_step]
 }
