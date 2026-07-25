@@ -8,6 +8,7 @@ interface GoogleLoginButtonProps {
   onSuccess: (accessToken: string) => void
   onError?: () => void
   disabled?: boolean
+  enabled?: boolean
 }
 
 export default function GoogleLoginButton({
@@ -15,19 +16,60 @@ export default function GoogleLoginButton({
   onSuccess,
   onError,
   disabled,
+  enabled = true,
 }: GoogleLoginButtonProps) {
+  if (!enabled) {
+    return (
+      <GoogleButton
+        label={label}
+        disabled={disabled}
+        onClick={onError}
+      />
+    )
+  }
+
+  return (
+    <ConnectedGoogleButton
+      label={label}
+      onSuccess={onSuccess}
+      onError={onError}
+      disabled={disabled}
+    />
+  )
+}
+
+function ConnectedGoogleButton({
+  label,
+  onSuccess,
+  onError,
+  disabled,
+}: Omit<GoogleLoginButtonProps, 'enabled'>) {
   const login = useGoogleLogin({
     onSuccess: ({ access_token }) => onSuccess(access_token),
     onError: onError,
   })
 
   return (
+    <GoogleButton label={label} disabled={disabled} onClick={() => login()} />
+  )
+}
+
+function GoogleButton({
+  label,
+  disabled,
+  onClick,
+}: {
+  label: string
+  disabled?: boolean
+  onClick?: () => void
+}) {
+  return (
     <Button
       type="button"
       variant="outline"
-      onClick={() => login()}
+      onClick={onClick}
       disabled={disabled}
-      className="w-full h-12 border-[#3535C8] text-[#3535C8] hover:bg-indigo-50 hover:text-[#3535C8] gap-3 text-sm font-semibold"
+      className="h-[43px] w-full gap-2.5 rounded-none border-[#D8D5ED] bg-transparent text-[13px] font-semibold text-[#2701C3] shadow-none hover:border-[#2701C3] hover:bg-indigo-50 hover:text-[#2701C3]"
     >
       <GoogleIcon />
       {label}
