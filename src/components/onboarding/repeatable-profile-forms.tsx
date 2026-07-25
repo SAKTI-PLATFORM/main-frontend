@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import type { UserProfile } from '@/types/auth.types'
 import type {
   CreateCertificationPayload,
@@ -36,7 +37,6 @@ import {
   Save,
   Trash2,
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
 
 const educationLevels: EducationLevel[] = ['SMA', 'D3', 'S1', 'S2', 'S3']
@@ -53,14 +53,15 @@ export function RepeatableProfileForms({
   accountProfile,
   onBack,
   onNext,
+  onSaved,
 }: {
   activeStep: number
   parseResult: ParseCvResponse
   accountProfile: UserProfile | null
   onBack: () => void
   onNext: () => void
+  onSaved?: () => Promise<void>
 }) {
-  const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [identity, setIdentity] = useState<UpdateIdentityPayload>(() =>
     toIdentityPayload(parseResult, accountProfile),
@@ -130,7 +131,7 @@ export function RepeatableProfileForms({
       ])
       window.localStorage.setItem('sakti:onboarding:cvParsed', 'true')
       Toast.success(totalCount ? `${totalCount} data profil berhasil disimpan.` : 'Profil CV sudah siap digunakan.')
-      router.push('/job-seeker')
+      if (onSaved) await onSaved()
     } catch (error) {
       handleApiError(error)
     } finally {
@@ -402,7 +403,7 @@ function Select({ value, onChange, children }: { value: string; onChange: (value
 }
 
 function TextArea({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder?: string }) {
-  return <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={4} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50" placeholder={placeholder} />
+  return <Textarea value={value} onChange={(event) => onChange(event.target.value)} rows={4} placeholder={placeholder} />
 }
 
 function ReviewSection({ title, children }: { title: string; children: ReactNode }) {

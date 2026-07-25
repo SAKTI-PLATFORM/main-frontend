@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 
 interface LikertScaleProps {
   value: number | undefined
@@ -17,20 +18,22 @@ export function LikertScale({ value, onChange, minLabel, maxLabel, points = 7 }:
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-1.5">
         {scale.map((point) => (
-          <button
+          <Button
             type="button"
             key={point}
             onClick={() => onChange(point)}
             aria-pressed={value === point}
+            variant={value === point ? 'default' : 'outline'}
+            size="icon-lg"
             className={cn(
-              'size-9 rounded-full border text-sm font-medium transition-colors',
+              'rounded-full text-sm font-medium',
               value === point
-                ? 'border-primary bg-primary text-white'
-                : 'border-border hover:bg-muted',
+                ? 'border-primary'
+                : 'hover:bg-muted',
             )}
           >
             {point}
-          </button>
+          </Button>
         ))}
       </div>
       <div className="flex justify-between text-xs text-muted-foreground">

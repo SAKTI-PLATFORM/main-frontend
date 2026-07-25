@@ -6,12 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ParseCvResponse } from '@/types/seeker.types';
 import type { UserProfile } from '@/types/auth.types';
+import type { OnboardingSessionResponse } from '@/types/career-onboarding.types';
 import { handleApiError } from '@/utils/api-error';
 import { Toast } from '@/utils/toast';
 import { AlertCircle, Check, CheckCircle2, Loader2, Sparkles, UploadCloud, X } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { ChangeEvent, DragEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { RepeatableProfileForms } from './repeatable-profile-forms';
+import { CareerJourney } from './career-journey';
 
 type UploadPhase = 'idle' | 'uploading' | 'success' | 'error';
 
@@ -69,6 +72,7 @@ const onboardingJourney = [
 ] as const;
 
 export function OnboardingWizard() {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [phase, setPhase] = useState<UploadPhase>('idle');
@@ -77,22 +81,48 @@ export function OnboardingWizard() {
   const [parseResult, setParseResult] = useState<ParseCvResponse | null>(null);
   const [accountProfile, setAccountProfile] = useState<UserProfile | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [journeySession, setJourneySession] = useState<OnboardingSessionResponse | null>(null);
+  const [bootstrapping, setBootstrapping] = useState(true);
 
   const step = wizardSteps[currentStep];
   const isUploading = phase === 'uploading';
 
   useEffect(() => {
     let active = true;
-    void authApi
-      .me()
-      .then((response) => {
-        if (active) setAccountProfile(response.data.data);
-      })
-      .catch(() => undefined);
+    void (async () => {
+      try {
+        const [profileResponse, sessionResponse] = await Promise.all([
+          authApi.me().catch(() => null),
+          seekerApi.getCurrentOnboarding(),
+        ]);
+        if (!active) return;
+        if (profileResponse) setAccountProfile(profileResponse.data.data);
+        const session = sessionResponse.data.data;
+        if (!session) return;
+        setJourneySession(session);
+        if (session.status === 'COMPLETED') {
+          router.replace('/job-seeker');
+          return;
+        }
+        if (session.current_step === 'IDENTITY' && session.cv_id) {
+          const parsedResponse = await seekerApi.getParsedCv(
+            session.onboarding_session_id,
+          );
+          if (!active) return;
+          setParseResult(parsedResponse.data.data);
+          setPhase('success');
+          setCurrentStep(Math.max(1, Math.min(session.profile_step, 7)));
+        }
+      } catch (error) {
+        if (active) handleApiError(error);
+      } finally {
+        if (active) setBootstrapping(false);
+      }
+    })();
     return () => {
       active = false;
     };
-  }, []);
+  }, [router]);
 
   async function processCv(file: File) {
     const validationError = validatePdf(file);
@@ -111,6 +141,11 @@ export function OnboardingWizard() {
 
     try {
       const response = await seekerApi.parseCv(file);
+      const sessionResponse = await seekerApi.getCurrentOnboarding();
+      if (!sessionResponse.data.data) {
+        throw new Error('Sesi onboarding tidak ditemukan setelah parsing CV.');
+      }
+      setJourneySession(sessionResponse.data.data);
       try {
         const profileResponse = await authApi.me();
         setAccountProfile(profileResponse.data.data);
@@ -118,6 +153,7 @@ export function OnboardingWizard() {
         // Parsing remains usable when profile refresh is temporarily unavailable.
       }
       setParseResult(response.data.data);
+      setCurrentStep(1);
       setPhase('success');
       Toast.success('PDF berhasil dibaca. Tinjau data yang terdeteksi.');
     } catch (error) {
@@ -162,13 +198,46 @@ export function OnboardingWizard() {
     }
   }
 
-  function navigateToStep(index: number) {
+  async function navigateToStep(index: number) {
     if (index > 0 && !parseResult) {
       Toast.info('Unggah dan proses PDF terlebih dahulu.');
       return;
     }
+    if (
+      journeySession?.current_step === 'IDENTITY' &&
+      index > journeySession.profile_step
+    ) {
+      try {
+        const response = await seekerApi.saveProfileProgress(
+          journeySession.onboarding_session_id,
+          index,
+        );
+        setJourneySession(response.data.data);
+      } catch (error) {
+        handleApiError(error);
+        return;
+      }
+    }
     setCurrentStep(index);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function completeProfileJourney() {
+    const session = journeySession ?? (await seekerApi.createOrGetOnboarding(parseResult?.cvId)).data.data;
+    const response = await seekerApi.completeProfile(session.onboarding_session_id);
+    setJourneySession(response.data.data);
+  }
+
+  if (bootstrapping || journeySession?.status === 'COMPLETED') {
+    return <OnboardingLoading />;
+  }
+
+  if (
+    journeySession &&
+    journeySession.current_step !== 'CV_UPLOAD' &&
+    journeySession.current_step !== 'IDENTITY'
+  ) {
+    return <CareerJourney initialSession={journeySession} />;
   }
 
   return (
@@ -241,11 +310,24 @@ export function OnboardingWizard() {
                 onContinue={() => navigateToStep(1)}
               />
             ) : parseResult ? (
-              <RepeatableProfileForms activeStep={currentStep} parseResult={parseResult} accountProfile={accountProfile} onBack={() => navigateToStep(currentStep - 1)} onNext={() => navigateToStep(currentStep + 1)} />
+              <RepeatableProfileForms activeStep={currentStep} parseResult={parseResult} accountProfile={accountProfile} onBack={() => navigateToStep(currentStep - 1)} onNext={() => navigateToStep(currentStep + 1)} onSaved={completeProfileJourney} />
             ) : null}
           </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+function OnboardingLoading() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-6">
+      <Card className="w-full max-w-sm">
+        <CardContent className="flex items-center justify-center gap-3 py-8 text-sm text-muted-foreground">
+          <Loader2 className="size-5 animate-spin text-primary" />
+          Memulihkan progress onboarding…
+        </CardContent>
+      </Card>
     </div>
   );
 }

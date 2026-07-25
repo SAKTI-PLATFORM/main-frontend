@@ -120,6 +120,7 @@ export interface IdentityResponse {
 }
 
 export interface ParseCvResponse {
+  onboardingSessionId: string
   cvId: string
   parsedId: string
   confidenceScore: number
