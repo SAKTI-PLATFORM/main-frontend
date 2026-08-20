@@ -11,6 +11,8 @@ import type {
 import type { DashboardResponse } from '@/types/seeker.types'
 import { handleApiError } from '@/utils/api-error'
 import { useEffect, useState } from 'react'
+import axios from 'axios'
+import type { PipelineRun, JobMatcherResult } from '@/types/career-pipeline.types'
 
 export type DashboardState =
   | { status: 'loading' }
@@ -21,6 +23,7 @@ export type DashboardState =
       session: OnboardingSessionResponse | null
       assessment: AssessmentResultResponse | null
       career: DoubleDiamondResultResponse | null
+      jobMatcher: PipelineRun<JobMatcherResult> | null
     }
 
 export function useDashboard(): DashboardState {
@@ -40,6 +43,7 @@ export function useDashboard(): DashboardState {
         const session = sessionResponse.data.data
         let assessment: AssessmentResultResponse | null = null
         let career: DoubleDiamondResultResponse | null = null
+        let jobMatcher: PipelineRun<JobMatcherResult> | null = null
 
         if (session?.status === 'COMPLETED') {
           const [assessmentResponse, careerResponse] = await Promise.all([
@@ -48,6 +52,16 @@ export function useDashboard(): DashboardState {
           ])
           assessment = assessmentResponse.data.data
           career = careerResponse.data.data
+          try {
+            const jobMatcherResponse = await seekerApi.getLatestJobMatches(
+              session.onboarding_session_id,
+            )
+            jobMatcher = jobMatcherResponse.data.data
+          } catch (error) {
+            if (!axios.isAxiosError(error) || error.response?.status !== 404) {
+              throw error
+            }
+          }
         }
         if (!active) return
 
@@ -64,11 +78,14 @@ export function useDashboard(): DashboardState {
             employmentStatus: null,
             educationLevel: null,
             field: career?.selected_field ?? null,
-            targetRole: career?.selected_role ?? null,
+            targetRole: resolvedTargetRole(career),
           },
           employabilityScore: confidence,
           profileCompleteness: onboardingProgress(session),
-          matchedCount: 0,
+          matchedCount:
+            jobMatcher?.status === 'COMPLETED'
+              ? (jobMatcher.result?.career_match_results.length ?? 0)
+              : 0,
           ocean: assessment
             ? {
                 scores: {
@@ -134,6 +151,7 @@ export function useDashboard(): DashboardState {
           session,
           assessment,
           career,
+          jobMatcher,
         })
       } catch (error) {
         if (!active) return
@@ -173,6 +191,18 @@ function onboardingProgress(session: OnboardingSessionResponse | null): number {
 
 function normalizeConfidence(value: number): number {
   return Math.round((value <= 1 ? value * 100 : value) * 100) / 100
+}
+
+function resolvedTargetRole(career: DoubleDiamondResultResponse | null): string | null {
+  const selectedRole = career?.selected_role?.trim()
+  if (selectedRole && !isConfirmationAnswer(selectedRole)) return selectedRole
+  return career?.recommended_roles?.[0]?.label ?? null
+}
+
+function isConfirmationAnswer(value: string): boolean {
+  return /^(ya|iya|tidak|setuju|saya setuju|sangat setuju|sesuai|sudah sesuai)\b/i.test(
+    value.trim(),
+  )
 }
 
 function stepLabel(step: OnboardingCurrentStep): string {
