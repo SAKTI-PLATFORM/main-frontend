@@ -128,3 +128,38 @@
     @apply font-sans;
   }
 }
+
+@keyframes math-curve-orbit {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes math-curve-particle {
+  0%,
+  100% {
+    opacity: 0.12;
+  }
+  18% {
+    opacity: 1;
+  }
+  42% {
+    opacity: 0.28;
+  }
+}
+
+.math-curve-loader__orbit {
+  animation: math-curve-orbit 9s linear infinite;
+  transform-origin: 50% 50%;
+}
+
+.math-curve-loader__particle {
+  animation: math-curve-particle 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .math-curve-loader__orbit,
+  .math-curve-loader__particle {
+    animation-duration: 12s;
+  }
+}
