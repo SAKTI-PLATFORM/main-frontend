@@ -9,8 +9,12 @@ const figtree = Figtree({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://sakti-ai.vercel.app'),
   title: 'SAKTI AI',
   description: 'Platform job matching berbasis AI',
+  twitter: {
+    card: 'summary_large_image',
+  },
 }
 
 export default function RootLayout({
