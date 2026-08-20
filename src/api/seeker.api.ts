@@ -2,6 +2,7 @@ import api from '@/lib/axios'
 import type { ApiResponse } from '@/types/api.types'
 import type {
   CreateCertificationPayload,
+  BulkUpsertProfilePayload,
   CreateEducationPayload,
   CreateExperiencePayload,
   CreateProjectPayload,
@@ -21,6 +22,11 @@ import type {
   DoubleDiamondResultResponse,
   OnboardingSessionResponse,
 } from '@/types/career-onboarding.types'
+import type {
+  JobMatcherResult,
+  PipelineRun,
+  TalentForgerResult,
+} from '@/types/career-pipeline.types'
 
 const basePath = '/job-seeker/onboarding'
 
@@ -35,6 +41,12 @@ export const seekerApi = {
 
   updateIdentity: (body: UpdateIdentityPayload) =>
     api.put<ApiResponse<IdentityResponse>>(`${basePath}/identity`, body),
+
+  bulkUpsertProfile: (body: BulkUpsertProfilePayload) =>
+    api.put<ApiResponse<{ onboardingSessionId: string }>>(
+      `${basePath}/profile`,
+      body,
+    ),
 
   createEducation: (body: CreateEducationPayload) =>
     api.post<ApiResponse<OnboardingRecordResponse>>(
@@ -147,5 +159,31 @@ export const seekerApi = {
   completeOnboarding: (sessionId: string) =>
     api.post<ApiResponse<OnboardingSessionResponse>>(
       `${basePath}/${sessionId}/complete`,
+    ),
+
+  generateJobMatches: (sessionId: string) =>
+    api.post<ApiResponse<PipelineRun<JobMatcherResult>>>(
+      `${basePath}/${sessionId}/job-matches/generate`,
+    ),
+
+  getLatestJobMatches: (sessionId: string) =>
+    api.get<ApiResponse<PipelineRun<JobMatcherResult>>>(
+      `${basePath}/${sessionId}/job-matches/latest`,
+    ),
+
+  generateLearningPath: (sessionId: string, matchId: string) =>
+    api.post<ApiResponse<PipelineRun<TalentForgerResult>>>(
+      `${basePath}/${sessionId}/learning-paths/generate`,
+      { matchId },
+    ),
+
+  getLatestLearningPath: (sessionId: string) =>
+    api.get<ApiResponse<PipelineRun<TalentForgerResult>>>(
+      `${basePath}/${sessionId}/learning-paths/latest`,
+    ),
+
+  getPipelineStatus: <T>(sessionId: string, pipelineRunId: string) =>
+    api.get<ApiResponse<PipelineRun<T>>>(
+      `${basePath}/${sessionId}/ai-pipeline/${pipelineRunId}`,
     ),
 }
