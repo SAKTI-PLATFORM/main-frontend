@@ -55,7 +55,6 @@ export default function PersonalityDashboardPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">OCEAN Personality</CardTitle>
-              <Badge variant="secondary">SAKTI Lens</Badge>
             </div>
             <CardDescription>
               {data.ocean
@@ -94,11 +93,6 @@ export default function PersonalityDashboardPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">RIASEC Alignment</CardTitle>
-              {data.riasec ? (
-                <Badge>{data.riasec.hollandCode}</Badge>
-              ) : (
-                <Badge variant="secondary">SAKTI Lens</Badge>
-              )}
             </div>
             <CardDescription>Holland code dari 3 tipe tertinggi</CardDescription>
           </CardHeader>
