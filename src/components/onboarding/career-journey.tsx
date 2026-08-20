@@ -64,10 +64,10 @@ export function CareerJourney({
       <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card px-3 py-5 md:flex">
         <div className="flex items-center px-2 pb-6">
           <Image
-            src="/logo-color.png"
+            src="/logo.png"
             alt="SAKTI AI"
-            width={120}
-            height={40}
+            width={160}
+            height={80}
             className="h-9 w-auto"
             priority
           />
