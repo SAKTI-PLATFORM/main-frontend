@@ -1,4 +1,4 @@
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { ArrowRight, ClipboardList } from 'lucide-react'
 import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -27,7 +27,7 @@ export function IncompleteOnboardingBanner({
       <CardContent className="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-            <Sparkles className="size-4" />
+            <ClipboardList className="size-4" />
           </div>
           <div className="space-y-1.5">
             <p className="text-sm font-semibold text-amber-900">

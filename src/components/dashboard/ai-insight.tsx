@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react'
+import { FileChartColumn } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import type { AiInsight as AiInsightData } from '@/types/seeker.types'
@@ -12,7 +12,7 @@ export function AiInsight({ insight }: AiInsightProps) {
     <Card className="border-primary/30 bg-primary/5">
       <CardContent className="flex gap-3 py-4">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-          <Sparkles className="size-4" />
+          <FileChartColumn className="size-4" />
         </div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">

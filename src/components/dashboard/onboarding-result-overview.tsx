@@ -11,7 +11,7 @@ import type {
   AssessmentResultResponse,
   DoubleDiamondResultResponse,
 } from '@/types/career-onboarding.types'
-import { CheckCircle2, Compass, ShieldAlert } from 'lucide-react'
+import { CheckCircle2, Navigation, ShieldAlert } from 'lucide-react'
 
 interface OnboardingResultOverviewProps {
   assessment: AssessmentResultResponse
@@ -79,7 +79,7 @@ export function OnboardingResultOverview({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Compass className="size-4 text-primary" />
+            <Navigation className="size-4 text-primary" />
             Rekomendasi arah karier
           </CardTitle>
           <CardDescription>
