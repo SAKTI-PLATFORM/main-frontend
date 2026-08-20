@@ -183,6 +183,15 @@ export interface CreateSkillPayload {
   evidenceStrength?: string
 }
 
+export interface BulkUpsertProfilePayload {
+  identity: UpdateIdentityPayload
+  educations: CreateEducationPayload[]
+  experiences: CreateExperiencePayload[]
+  projects: CreateProjectPayload[]
+  certifications: CreateCertificationPayload[]
+  skills: CreateSkillPayload[]
+}
+
 export type OnboardingStep =
   | 'foundation'
   | 'expertise'
