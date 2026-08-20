@@ -2,15 +2,12 @@
 
 import type { LucideIcon } from 'lucide-react'
 import {
-  Activity,
-  Brain,
-  BriefcaseBusiness,
+  ChartSpline,
+  Check,
   ChevronRight,
-  Compass,
-  Gauge,
+  FileChartColumn,
   MapPin,
-  Sparkles,
-  Target,
+  Navigation,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -54,6 +51,25 @@ const RIASEC_TRAITS = [
   { key: 'conventional', label: 'Conventional', short: 'C' },
 ] as const
 
+const ONBOARDING_STEPS = [
+  {
+    title: 'Profil',
+    description: 'Unggah CV dan periksa kembali identitas, pengalaman, pendidikan, skill, serta proyekmu.',
+  },
+  {
+    title: 'Psikometri',
+    description: 'Kenali kepribadian dan minat kariermu melalui asesmen OCEAN dan RIASEC.',
+  },
+  {
+    title: 'Eksplorasi Karier',
+    description: 'Temukan bidang dan role yang paling sesuai melalui proses Double Diamond.',
+  },
+  {
+    title: 'Preferensi & Selesai',
+    description: 'Tentukan preferensi kerja akhir dan siapkan profilmu untuk proses matching.',
+  },
+] as const
+
 export default function SkillsDashboardPage() {
   const state = useDashboard()
 
@@ -77,40 +93,6 @@ export default function SkillsDashboardPage() {
           </aside>
 
           <section className="min-w-0 space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <MetricCard
-                icon={Gauge}
-                label={completed ? 'Confidence' : 'Progress'}
-                value={
-                  completed && confidence != null
-                    ? `${Math.round(confidence)}%`
-                    : `${data.profileCompleteness}%`
-                }
-                badge={completed ? 'Final' : 'Auto-saved'}
-                tone="blue"
-              />
-              <MetricCard
-                icon={Brain}
-                label="RIASEC Dominan"
-                value={data.riasec?.hollandCode ?? '—'}
-                badge={assessment ? 'Aktif' : 'Menunggu'}
-                tone="green"
-              />
-              <MetricCard
-                icon={Target}
-                label="Bidang Terpilih"
-                value={shortValue(career?.selected_field)}
-                badge={career ? 'Terpilih' : 'Belum'}
-                tone="orange"
-              />
-              <MetricCard
-                icon={BriefcaseBusiness}
-                label="Role Rekomendasi"
-                value={career?.recommended_roles?.length.toString() ?? '—'}
-                badge={career?.selected_role ? 'Terkurasi' : 'Menunggu'}
-                tone="purple"
-              />
-            </div>
 
             <AssessmentTimeline assessment={assessment} career={career} />
 
@@ -218,13 +200,14 @@ function OnboardingStatus({
   progress: number
 }) {
   const completed = session?.status === 'COMPLETED'
+  const activeStage = onboardingStage(session)
 
   return (
     <Card className="rounded-2xl border-[#ECECF2] shadow-none">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="flex items-center gap-2 text-sm">
-            <Activity className="size-4 text-primary" />
+            <ChartSpline className="size-4 text-primary" />
             Status Onboarding
           </CardTitle>
           <span className="text-sm font-bold text-primary">{progress}%</span>
@@ -237,17 +220,58 @@ function OnboardingStatus({
       </CardHeader>
       <CardContent className="space-y-4">
         <Progress value={progress} className="h-2" />
-        <div className="grid grid-cols-5 gap-1">
-          {Array.from({ length: 5 }, (_, index) => (
-            <span
-              key={index}
-              className={cn(
-                'h-1.5 rounded-full',
-                progress >= (index + 1) * 20 ? 'bg-primary' : 'bg-muted',
-              )}
-            />
-          ))}
-        </div>
+        <ol className="pt-1" aria-label="Progress tahapan onboarding">
+          {ONBOARDING_STEPS.map((step, index) => {
+            const isComplete = activeStage > index
+            const isActive = activeStage === index
+
+            return (
+              <li key={step.title} className="grid grid-cols-[30px_1fr] gap-3">
+                <div className="flex flex-col items-center">
+                  <span
+                    className={cn(
+                      'relative z-10 flex size-7 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold transition-colors',
+                      isComplete && 'border-primary bg-primary text-primary-foreground',
+                      isActive && 'border-primary bg-primary text-primary-foreground ring-4 ring-primary/10',
+                      !isComplete && !isActive && 'border-border bg-card text-muted-foreground',
+                    )}
+                    aria-label={isComplete ? `${step.title} selesai` : isActive ? `${step.title} aktif` : `${step.title} belum dimulai`}
+                  >
+                    {isComplete ? <Check className="size-3.5" /> : index + 1}
+                  </span>
+                  {index < ONBOARDING_STEPS.length - 1 && (
+                    <span
+                      className={cn(
+                        'min-h-8 w-px flex-1',
+                        isComplete ? 'bg-primary' : 'bg-border',
+                      )}
+                    />
+                  )}
+                </div>
+                <div className={cn('pb-5', index === ONBOARDING_STEPS.length - 1 && 'pb-0')}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className={cn('text-sm font-semibold', isActive ? 'text-primary' : 'text-foreground')}>
+                      {step.title}
+                    </p>
+                    <span
+                      className={cn(
+                        'text-[10px] font-medium',
+                        isComplete && 'text-emerald-600',
+                        isActive && 'text-primary',
+                        !isComplete && !isActive && 'text-muted-foreground',
+                      )}
+                    >
+                      {isComplete ? 'Selesai' : isActive ? 'Sedang berlangsung' : 'Belum dimulai'}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    {step.description}
+                  </p>
+                </div>
+              </li>
+            )
+          })}
+        </ol>
         {!completed && (
           <Link
             href="/job-seeker/onboarding"
@@ -260,6 +284,29 @@ function OnboardingStatus({
       </CardContent>
     </Card>
   )
+}
+
+function onboardingStage(session: OnboardingSessionResponse | null): number {
+  if (session?.status === 'COMPLETED' || session?.current_step === 'COMPLETE') {
+    return ONBOARDING_STEPS.length
+  }
+  if (!session) return 0
+
+  if (session.current_step === 'CV_UPLOAD' || session.current_step === 'IDENTITY') {
+    return 0
+  }
+  if (session.current_step === 'OCEAN' || session.current_step === 'RIASEC') {
+    return 1
+  }
+  if (
+    session.current_step === 'DIVERGE_1' ||
+    session.current_step === 'CONVERGE_1' ||
+    session.current_step === 'DIVERGE_2' ||
+    session.current_step === 'CONVERGE_2'
+  ) {
+    return 2
+  }
+  return 3
 }
 
 function MetricCard({
@@ -347,7 +394,7 @@ function AssessmentTimeline({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <CardTitle className="flex items-center gap-2 text-sm">
-              <Activity className="size-4 text-primary" />
+              <ChartSpline className="size-4 text-primary" />
               Assessment &amp; Career Journey
             </CardTitle>
             <CardDescription className="mt-1">
@@ -467,16 +514,13 @@ function CareerForecast({
         <div className="flex items-start justify-between gap-3">
           <div>
             <CardTitle className="flex items-center gap-2 text-sm">
-              <Compass className="size-4 text-primary" />
+              <Navigation className="size-4 text-primary" />
               Career Forecast
             </CardTitle>
             <CardDescription className="mt-1">
               Rekomendasi berdasarkan assessment dan Double Diamond.
             </CardDescription>
           </div>
-          {assessment && (
-            <Badge variant="secondary">RIASEC {assessment.riasec.dominant_code}</Badge>
-          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -509,7 +553,7 @@ function CareerForecast({
             <div className="rounded-xl border border-sky-100 bg-sky-50 p-4">
               <div className="flex items-start gap-3">
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-sky-600">
-                  <Sparkles className="size-4" />
+                  <FileChartColumn className="size-4" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-sky-900">SAKTI AI Report</p>
