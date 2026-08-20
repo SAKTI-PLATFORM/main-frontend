@@ -121,14 +121,14 @@ export function RepeatableProfileForms({
 
     setSaving(true)
     try {
-      await Promise.all([
-        seekerApi.updateIdentity(identity),
-        ...completeEducations.map((entry) => seekerApi.createEducation(entry)),
-        ...completeExperiences.map((entry) => seekerApi.createExperience(entry)),
-        ...completeProjects.map((entry) => seekerApi.createProject(entry)),
-        ...completeCertifications.map((entry) => seekerApi.createCertification(entry)),
-        ...completeSkills.map((entry) => seekerApi.createSkill(entry)),
-      ])
+      await seekerApi.bulkUpsertProfile({
+        identity,
+        educations: completeEducations,
+        experiences: completeExperiences,
+        projects: completeProjects,
+        certifications: completeCertifications,
+        skills: completeSkills,
+      })
       window.localStorage.setItem('sakti:onboarding:cvParsed', 'true')
       Toast.success(totalCount ? `${totalCount} data profil berhasil disimpan.` : 'Profil CV sudah siap digunakan.')
       if (onSaved) await onSaved()
