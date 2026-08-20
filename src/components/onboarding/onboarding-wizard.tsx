@@ -64,11 +64,10 @@ const wizardSteps = [
 ] as const;
 
 const onboardingJourney = [
-  { title: 'Mulai', caption: 'CV & identitas' },
-  { title: 'Psikometri', caption: 'OCEAN · RIASEC' },
-  { title: 'Double Diamond', caption: 'Asesmen terpersonalisasi' },
-  { title: 'Preferensi', caption: 'Lokasi · Gaji · Timeline' },
-  { title: 'Profil Lengkap', caption: 'Siap matching' },
+  { title: 'Profil', caption: 'CV & identitas' },
+  { title: 'Psikometri', caption: 'OCEAN & RIASEC' },
+  { title: 'Eksplorasi Karier', caption: 'Double Diamond' },
+  { title: 'Selesai', caption: 'Preferensi & siap matching' },
 ] as const;
 
 export function OnboardingWizard() {
@@ -244,7 +243,7 @@ export function OnboardingWizard() {
     <div className="flex min-h-screen overflow-x-hidden bg-muted/30">
       <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card px-3 py-5 md:flex">
         <div className="flex items-center px-2 pb-6">
-          <Image src="/logo-color.png" alt="SAKTI AI" width={120} height={40} className="h-9 w-auto" priority />
+          <Image src="/logo.png" alt="SAKTI AI" width={160} height={80} className="h-16 w-auto" priority />
         </div>
 
         <nav aria-label="Tahapan onboarding" className="flex flex-col gap-1">

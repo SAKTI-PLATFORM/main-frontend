@@ -38,11 +38,10 @@ import { useRouter } from 'next/navigation'
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 
 const JOURNEY = [
-  { title: 'Mulai', caption: 'CV & identitas' },
-  { title: 'Psikometri', caption: 'OCEAN · RIASEC' },
-  { title: 'Double Diamond', caption: 'Eksplorasi terpersonalisasi' },
-  { title: 'Preferensi', caption: 'Konfirmasi arah karier' },
-  { title: 'Profil Lengkap', caption: 'Siap matching' },
+  { title: 'Profil', caption: 'CV & identitas' },
+  { title: 'Psikometri', caption: 'OCEAN & RIASEC' },
+  { title: 'Eksplorasi Karier', caption: 'Double Diamond' },
+  { title: 'Selesai', caption: 'Preferensi & siap matching' },
 ] as const
 
 const DD_PHASES: DoubleDiamondPhase[] = [
@@ -370,7 +369,7 @@ function DoubleDiamondPanel({
       await saveDoubleDiamond(session.onboarding_session_id, phase, answers)
       const selection =
         phase === 'CONVERGE_1' || phase === 'CONVERGE_2'
-          ? deriveSelection(data.questions, answers)
+          ? deriveSelection(phase, data.questions, answers)
           : undefined
       const response = await seekerApi.submitDoubleDiamond(
         session.onboarding_session_id,
@@ -629,7 +628,7 @@ function ResultPanel({
       <Card>
         <CardHeader>
           <CardTitle>
-            {result.selected_role || 'Arah karier terpilih'}
+            {resolveSelectedRole(result) || 'Arah karier terpilih'}
           </CardTitle>
           <CardDescription>
             RIASEC dominan: {assessment.riasec.dominant_code} · confidence{' '}
@@ -835,15 +834,44 @@ function isAnswered(answer: DoubleDiamondAnswer | undefined): boolean {
   )
 }
 function deriveSelection(
+  phase: DoubleDiamondPhase,
   questions: DoubleDiamondQuestion[],
   answers: Record<string, DoubleDiamondAnswer>,
 ): string | undefined {
-  for (const question of questions) {
+  const selectionTerms =
+    phase === 'CONVERGE_2'
+      ? /role|posisi|jabatan|profesi|pekerjaan/i
+      : /bidang|area|industri|sektor/i
+  const confirmationTerms = /konfirmasi|setuju|sesuai|yakin/i
+  const orderedQuestions = [...questions].sort((left, right) => {
+    const score = (question: DoubleDiamondQuestion) => {
+      const context = `${question.question_code} ${question.question_text} ${question.helper_text ?? ''}`
+      return Number(selectionTerms.test(context)) * 2 - Number(confirmationTerms.test(context))
+    }
+    return score(right) - score(left)
+  })
+
+  for (const question of orderedQuestions) {
     const answer = answers[question.question_id]
-    if (typeof answer === 'string' && answer.trim()) return answer.trim()
-    if (Array.isArray(answer) && answer.length) return answer[0]
+    const value =
+      typeof answer === 'string' ? answer.trim() : Array.isArray(answer) ? answer[0] : ''
+    if (!value) continue
+    const label = question.options.find((option) => option.code === value)?.label ?? value
+    if (!isConfirmationAnswer(label)) return value
   }
   return undefined
+}
+
+function resolveSelectedRole(result: DoubleDiamondResultResponse): string | null {
+  const selectedRole = result.selected_role?.trim()
+  if (selectedRole && !isConfirmationAnswer(selectedRole)) return selectedRole
+  return result.recommended_roles?.[0]?.label ?? null
+}
+
+function isConfirmationAnswer(value: string): boolean {
+  return /^(ya|iya|tidak|setuju|saya setuju|sangat setuju|sesuai|sudah sesuai)\b/i.test(
+    value.trim(),
+  )
 }
 function phaseTitle(phase: DoubleDiamondPhase): string {
   return {
@@ -869,6 +897,6 @@ function journeyIndex(step: OnboardingCurrentStep): number {
   if (step === 'OCEAN' || step === 'RIASEC') return 1
   if (DD_PHASES.includes(step as DoubleDiamondPhase)) return 2
   if (step === 'PREFERENCE') return 3
-  if (step === 'COMPLETE') return 4
+  if (step === 'COMPLETE') return 3
   return 0
 }
