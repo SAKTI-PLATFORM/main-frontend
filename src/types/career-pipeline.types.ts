@@ -109,9 +109,24 @@ export interface TalentForgerResult {
   resource_recommendations: ResourceRecommendationResult[]
 }
 
+export type TurnType = 'processing' | 'question' | 'result' | 'error'
+export type TurnStatus = 'in_progress' | 'waiting_input' | 'done' | 'failed'
+
+/** One step of the Turn Title System's live trail — see AITurnTrail. */
+export interface TurnEvent {
+  turnId: string
+  sequence: number
+  title: string
+  type: TurnType
+  status: TurnStatus
+  timestamp: string
+}
+
 export interface PipelineRun<T> {
   pipelineRunId: string
   type: AiPipelineType
+  /** Null for JOB_MATCHER; the career match this roadmap belongs to otherwise. */
+  matchId: string | null
   status: AiPipelineStatus
   attempt: number
   errorMessage: string | null
@@ -119,4 +134,6 @@ export interface PipelineRun<T> {
   startedAt: string | null
   finishedAt: string | null
   result: T | null
+  /** Turn trail: live while RUNNING, persisted once COMPLETED. */
+  turns?: TurnEvent[]
 }

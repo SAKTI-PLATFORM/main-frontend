@@ -20,6 +20,7 @@ import {
   DashboardError,
   DashboardLoading,
 } from '@/components/dashboard/dashboard-status'
+import { AITurnTrail } from '@/components/career-pipeline/ai-turn-trail'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { MathCurveLoader } from '@/components/ui/math-curve-loader'
@@ -47,7 +48,6 @@ export default function LearningPathsPage() {
       ? dashboard.session.onboarding_session_id
       : null
   const matches = useCareerPipeline<JobMatcherResult>(sessionId, 'job-matcher')
-  const learning = useCareerPipeline<TalentForgerResult>(sessionId, 'talent-forger')
   const requestedMatch = useSyncExternalStore(subscribeToLocation, readRequestedMatch, () => null)
   const [selection, setSelection] = useState('')
 
@@ -64,6 +64,13 @@ export default function LearningPathsPage() {
       : availableMatches[0]?.match_id) ||
     ''
   const selectedMatch = availableMatches.find((match) => match.match_id === selectedMatchId)
+  // Reads the run saved for this exact role, so a roadmap generated earlier
+  // comes straight back from the backend instead of being regenerated. Only the
+  // top match is queued automatically, so only that one is worth waiting on.
+  const learning = useCareerPipeline<TalentForgerResult>(sessionId, 'talent-forger', {
+    matchId: selectedMatchId,
+    pollWhenMissing: Boolean(selectedMatchId) && selectedMatchId === topMatchId,
+  })
 
   if (dashboard.status === 'loading' || matches.loading || learning.loading) return <DashboardLoading />
   if (dashboard.status === 'error') return <DashboardError />
@@ -73,13 +80,13 @@ export default function LearningPathsPage() {
     learning.generating ||
     learning.run?.status === 'PENDING' ||
     learning.run?.status === 'RUNNING'
-  const latestResult = learning.run?.status === 'COMPLETED' ? learning.run.result : null
-  const resultMatchId = latestResult?.learning_paths[0]?.match_id ?? ''
-  const result = resultMatchId === selectedMatchId ? latestResult : null
+  const result = learning.run?.status === 'COMPLETED' ? learning.run.result : null
+  const awaitingAutoRun =
+    !learning.run && Boolean(selectedMatchId) && selectedMatchId === topMatchId
   const needsManualGeneration = Boolean(
     selectedMatchId &&
-      selectedMatchId !== resultMatchId &&
-      (selectedMatchId !== topMatchId || Boolean(resultMatchId)),
+      !busy &&
+      (learning.run?.status === 'FAILED' || (!learning.run && !awaitingAutoRun)),
   )
 
   return (
@@ -97,11 +104,14 @@ export default function LearningPathsPage() {
 
         {!availableMatches.length && <JobMatchesRequired />}
         {busy && (
-          <PipelineNotice
-            tone="loading"
-            title="Roadmap-mu sedang disusun"
-            description="TalentForger sedang memilih urutan skill, durasi, dan resource belajar yang paling relevan. Halaman ini akan diperbarui otomatis."
-          />
+          <>
+            <PipelineNotice
+              tone="loading"
+              title="Roadmap-mu sedang disusun"
+              description="TalentForger sedang memilih urutan skill, durasi, dan resource belajar yang paling relevan. Halaman ini akan diperbarui otomatis."
+            />
+            <AITurnTrail turns={learning.run?.turns} inFlight />
+          </>
         )}
         {learning.run?.status === 'FAILED' && (
           <PipelineNotice
@@ -110,11 +120,18 @@ export default function LearningPathsPage() {
             description={learning.run.errorMessage || 'TalentForger gagal setelah tiga percobaan otomatis.'}
           />
         )}
-        {availableMatches.length > 0 && !learning.run && (
+        {availableMatches.length > 0 && awaitingAutoRun && (
           <PipelineNotice
             tone="loading"
             title="Learning path utama sedang disiapkan"
             description="Role dengan match tertinggi diproses otomatis. Kamu tetap dapat memilih role lain dan membuat roadmapnya setelah proses utama selesai."
+          />
+        )}
+        {availableMatches.length > 0 && !learning.run && !awaitingAutoRun && (
+          <PipelineNotice
+            tone="idle"
+            title="Roadmap untuk role ini belum dibuat"
+            description="Role ini belum punya learning path tersimpan. Klik 'Buat learning path' untuk menyusunnya sekali — setelah itu hasilnya langsung dimuat dari data tersimpan."
           />
         )}
         {result && <LearningPathContent result={result} />}
@@ -388,11 +405,16 @@ function JobMatchesRequired() {
   )
 }
 
-function PipelineNotice({ tone, title, description }: { tone: 'loading' | 'error'; title: string; description: string }) {
+function PipelineNotice({ tone, title, description }: { tone: 'loading' | 'idle' | 'error'; title: string; description: string }) {
+  const palette = {
+    loading: ['border-violet-100 bg-violet-50 text-violet-900', 'bg-violet-100'],
+    idle: ['border-[#E7E4EE] bg-[#F8F7FB] text-[#3E3A47]', 'bg-[#EEEBFF] text-primary'],
+    error: ['border-rose-100 bg-rose-50 text-rose-900', 'bg-rose-100'],
+  }[tone]
   return (
-    <div className={cn('flex items-start gap-3 rounded-2xl border p-4', tone === 'loading' ? 'border-violet-100 bg-violet-50 text-violet-900' : 'border-rose-100 bg-rose-50 text-rose-900')}>
-      <span className={cn('grid size-9 shrink-0 place-items-center rounded-xl', tone === 'loading' ? 'bg-violet-100' : 'bg-rose-100')}>
-        {tone === 'loading' ? <MathCurveLoader size={26} label="Memproses learning path" /> : <AlertCircle className="size-4" />}
+    <div className={cn('flex items-start gap-3 rounded-2xl border p-4', palette[0])}>
+      <span className={cn('grid size-9 shrink-0 place-items-center rounded-xl', palette[1])}>
+        {tone === 'loading' ? <MathCurveLoader size={26} label="Memproses learning path" /> : tone === 'idle' ? <Workflow className="size-4" /> : <AlertCircle className="size-4" />}
       </span>
       <div><p className="text-sm font-bold">{title}</p><p className="mt-1 text-xs leading-5 opacity-75">{description}</p></div>
     </div>

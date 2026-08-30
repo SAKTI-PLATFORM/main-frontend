@@ -177,9 +177,10 @@ export const seekerApi = {
       { matchId },
     ),
 
-  getLatestLearningPath: (sessionId: string) =>
+  getLatestLearningPath: (sessionId: string, matchId?: string) =>
     api.get<ApiResponse<PipelineRun<TalentForgerResult>>>(
       `${basePath}/${sessionId}/learning-paths/latest`,
+      matchId ? { params: { matchId } } : undefined,
     ),
 
   getPipelineStatus: <T>(sessionId: string, pipelineRunId: string) =>

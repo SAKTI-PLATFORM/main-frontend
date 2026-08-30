@@ -18,6 +18,7 @@ import {
   DashboardError,
   DashboardLoading,
 } from '@/components/dashboard/dashboard-status'
+import { AITurnTrail } from '@/components/career-pipeline/ai-turn-trail'
 import { Badge } from '@/components/ui/badge'
 import { MathCurveLoader } from '@/components/ui/math-curve-loader'
 import {
@@ -83,11 +84,14 @@ export default function JobMatchesPage() {
           />
         )}
         {busy && (
-          <PipelineNotice
-            tone="loading"
-            title="SAKTI AI sedang mencocokkan profilmu"
-            description={`Kami membandingkan skill, pengalaman, psikometri, dan preferensimu. Percobaan ${pipeline.run?.attempt || 1} dari 3.`}
-          />
+          <>
+            <PipelineNotice
+              tone="loading"
+              title="SAKTI AI sedang mencocokkan profilmu"
+              description={`Kami membandingkan skill, pengalaman, psikometri, dan preferensimu. Percobaan ${pipeline.run?.attempt || 1} dari 3.`}
+            />
+            <AITurnTrail turns={pipeline.run?.turns} inFlight />
+          </>
         )}
         {!pipeline.run && (
           <PipelineNotice
