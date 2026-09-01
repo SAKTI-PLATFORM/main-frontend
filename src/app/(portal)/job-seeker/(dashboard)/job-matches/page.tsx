@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ExternalLink,
   MapPin,
+  RotateCw,
   TrendingUp,
   Waypoints,
 } from 'lucide-react'
@@ -76,12 +77,22 @@ export default function JobMatchesPage() {
   return (
     <div className="min-h-full bg-[#F7F7FB] px-4 py-5 sm:px-6 sm:py-7">
       <div className="mx-auto max-w-[1480px] space-y-5">
-        {pipeline.run?.status === 'FAILED' && (
-          <PipelineNotice
-            tone="error"
-            title="Analisis belum berhasil"
-            description={pipeline.run.errorMessage || 'JobMatcher gagal diproses setelah tiga percobaan otomatis.'}
-          />
+        {pipeline.run?.status === 'FAILED' && !pipeline.generating && (
+          <div className="space-y-3">
+            <PipelineNotice
+              tone="error"
+              title="Analisis belum berhasil"
+              description={pipeline.run.errorMessage || 'JobMatcher gagal diproses setelah tiga percobaan otomatis.'}
+            />
+            <button
+              type="button"
+              onClick={() => void pipeline.generate()}
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white transition hover:bg-primary/85"
+            >
+              <RotateCw className="size-4" />
+              Coba lagi
+            </button>
+          </div>
         )}
         {busy && (
           <>
