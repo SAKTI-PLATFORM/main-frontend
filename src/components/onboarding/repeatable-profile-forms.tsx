@@ -440,9 +440,42 @@ function readBoolean(item: Record<string, unknown>, key: string): boolean {
   return item[key] === true
 }
 
+const MONTH_NUM: Record<string, string> = {
+  jan: '01', january: '01', januari: '01',
+  feb: '02', february: '02', februari: '02',
+  mar: '03', mrt: '03', march: '03', maret: '03',
+  apr: '04', april: '04',
+  may: '05', mei: '05',
+  jun: '06', june: '06', juni: '06',
+  jul: '07', july: '07', juli: '07',
+  aug: '08', agu: '08', agt: '08', ags: '08', august: '08', agustus: '08',
+  sep: '09', sept: '09', september: '09',
+  oct: '10', okt: '10', october: '10', oktober: '10',
+  nov: '11', november: '11',
+  dec: '12', des: '12', december: '12', desember: '12',
+}
+
+/**
+ * Normalise a CV date to `YYYY-MM-DD` (the only shape `<input type="date">`
+ * and the backend accept). Previously anything other than `YYYY-MM-DD` /
+ * `YYYY` was dropped, which is how experience dates went missing and left
+ * the match's Experience score at 0.
+ */
 function readDate(item: Record<string, unknown>, key: string): string | undefined {
   const value = readString(item, key)
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`
+  const ym = value.match(/^(\d{4})-(\d{2})$/)
+  if (ym) return `${ym[1]}-${ym[2]}-01`
+  const my = value.match(/^(\d{1,2})[/-](\d{4})$/)
+  if (my && Number(my[1]) >= 1 && Number(my[1]) <= 12) {
+    return `${my[2]}-${my[1].padStart(2, '0')}-01`
+  }
+  const named = value.match(/^([A-Za-z]+)\.?\s+(\d{4})$/)
+  if (named) {
+    const month = MONTH_NUM[named[1].toLowerCase()]
+    if (month) return `${named[2]}-${month}-01`
+  }
   if (/^\d{4}$/.test(value)) return `${value}-01-01`
   return undefined
 }
