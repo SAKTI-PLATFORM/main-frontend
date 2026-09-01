@@ -28,6 +28,7 @@ import {
   ArrowRight,
   Check,
   CheckCircle2,
+  Dices,
   Loader2,
   RefreshCw,
   Save,
@@ -148,13 +149,14 @@ function AssessmentPanel({
 
   const load = useCallback(async () => {
     setLoading(true)
+    dirty.current = false
     try {
       const response = await seekerApi.getAssessmentQuestions(
         session.onboarding_session_id,
         type,
       )
       setData(response.data.data)
-      setAnswers(response.data.data.existing_responses)
+      setAnswers(response.data.data.existing_responses ?? {})
     } catch (error) {
       handleApiError(error)
     } finally {
@@ -175,9 +177,11 @@ function AssessmentPanel({
           dirty.current = false
           setSaveStatus('saved')
         })
-        .catch((error) => {
+        .catch(() => {
+          // Draft autosave — a transient failure must not pop a blocking
+          // dialog or bounce the page mid-assessment. The final `submit`
+          // re-saves every answer and surfaces real errors there.
           setSaveStatus('error')
-          handleApiError(error)
         })
     }, 700)
     return () => window.clearTimeout(timeout)
@@ -192,6 +196,19 @@ function AssessmentPanel({
   const progress = Math.round(
     (Object.keys(answers).length / data.questions.length) * 100,
   )
+
+  const autofill = () => {
+    dirty.current = true
+    setSaveStatus('idle')
+    setAnswers(
+      Object.fromEntries(
+        data.questions.map((question) => [
+          question.question_id,
+          1 + Math.floor(Math.random() * 5),
+        ]),
+      ),
+    )
+  }
 
   const submit = async () => {
     if (!complete) return
@@ -227,7 +244,21 @@ function AssessmentPanel({
         }
         description="Jawab sesuai kecenderunganmu saat ini. Tidak ada jawaban benar atau salah, dan hasil ini bukan diagnosis psikologis."
         progress={progress}
-        status={<SaveIndicator status={saveStatus} />}
+        status={
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={autofill}
+              className="gap-1.5"
+            >
+              <Dices className="size-3.5" />
+              Isi otomatis
+            </Button>
+            <SaveIndicator status={saveStatus} />
+          </div>
+        }
       />
       {data.questions.map((question) => (
         <Card key={question.question_id} size="sm">
