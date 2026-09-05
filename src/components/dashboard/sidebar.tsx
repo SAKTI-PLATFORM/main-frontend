@@ -5,6 +5,7 @@ import {
   Bot,
   ChevronRight,
   House,
+  LogOut,
   PanelLeftClose,
   Search,
   Settings,
@@ -14,9 +15,15 @@ import {
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useCallback, useEffect, useSyncExternalStore } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import { authApi } from '@/api/auth.api'
-import { setUser } from '@/features/auth'
+import { setUser, useLogout } from '@/features/auth'
 import { useAppDispatch, useAppSelector } from '@/hooks/redux'
 import { cn } from '@/lib/utils'
 import type { UserProfile } from '@/types/auth.types'
@@ -53,10 +60,6 @@ const NAVIGATION: Array<{ label: string; items: NavigationItem[] }> = [
       },
     ],
   },
-  {
-    label: 'Pengaturan',
-    items: [{ label: 'Settings', icon: Settings }],
-  },
 ]
 
 const ALL_ITEMS = NAVIGATION.flatMap((group) => group.items)
@@ -81,7 +84,7 @@ function readCollapsed(): boolean {
 }
 
 /** localStorage-backed collapse flag; SSR-safe and synced across tabs. */
-function useCollapsed(): [boolean, (value: boolean) => void] {
+export function useCollapsed(): [boolean, (value: boolean) => void] {
   const collapsed = useSyncExternalStore(
     subscribeCollapsed,
     readCollapsed,
@@ -210,24 +213,14 @@ export function Sidebar() {
           >
             <Zap className="size-4 fill-current" />
           </button>
-          <Avatar profile={profile} />
+          <AccountMenu profile={profile} collapsed />
         </div>
       ) : (
         <>
           <div className="px-4 pb-3">
             <SubscriptionCard />
           </div>
-          <div className="flex items-center gap-3 border-t border-[#F0F0F5] px-5 py-4">
-            <Avatar profile={profile} />
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold leading-5 text-[#23222B]">
-                {profile?.fullName || 'Pengguna SAKTI'}
-              </p>
-              <p className="truncate text-[11px] leading-4 text-[#9A9AA7]">
-                {profile?.email || 'Akun job seeker'}
-              </p>
-            </div>
-          </div>
+          <AccountMenu profile={profile} />
         </>
       )}
     </aside>
@@ -349,7 +342,103 @@ function SubscriptionCard() {
   )
 }
 
-function Avatar({ profile }: { profile: UserProfile | null }) {
+/** Click the account row to get a small "Settings / Keluar" menu. */
+function AccountMenu({
+  profile,
+  collapsed,
+}: {
+  profile: UserProfile | null
+  collapsed?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const logout = useLogout()
+  const name = profile?.fullName || 'Pengguna SAKTI'
+  const email = profile?.email || 'Akun job seeker'
+
+  useEffect(() => {
+    if (!open) return
+    function onPointerDown(event: PointerEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open])
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn('relative', !collapsed && 'border-t border-[#F0F0F5] px-4 py-2')}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={collapsed ? `Akun ${name}` : undefined}
+        className={cn(
+          'flex items-center rounded-lg text-left transition-colors hover:bg-[#F4F3FB]',
+          collapsed ? 'justify-center p-0.5' : 'w-full gap-3 px-1 py-2',
+        )}
+      >
+        <Avatar profile={profile} />
+        {!collapsed && (
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-semibold leading-5 text-[#23222B]">
+              {name}
+            </p>
+            <p className="truncate text-[11px] leading-4 text-[#9A9AA7]">{email}</p>
+          </div>
+        )}
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className={cn(
+            'absolute bottom-full z-40 mb-2 overflow-hidden rounded-lg border border-[#ECECF2] bg-white py-1.5 shadow-lg shadow-black/5',
+            collapsed ? 'left-0 w-56' : 'inset-x-4',
+          )}
+        >
+          <div className="border-b border-[#F0F0F5] px-4 py-3">
+            <p className="truncate text-[13px] font-semibold text-[#23222B]">{name}</p>
+            <p className="truncate text-[11px] text-[#9A9AA7]">{email}</p>
+          </div>
+          <Link
+            href="/job-seeker/settings"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 px-4 py-3 text-[13px] font-medium text-[#4B4B5C] transition-colors hover:bg-[#F4F3FB] hover:text-[#4138D8]"
+          >
+            <Settings className="size-4" />
+            Settings
+          </Link>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false)
+              logout()
+            }}
+            className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-[13px] font-medium text-rose-600 transition-colors hover:bg-rose-50"
+          >
+            <LogOut className="size-4" />
+            Keluar
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function Avatar({ profile }: { profile: UserProfile | null }) {
   const name = profile?.fullName || 'Pengguna SAKTI'
   const initials =
     name
