@@ -214,7 +214,7 @@ function normalizeConfidence(value: number): number {
 
 function resolvedTargetRole(career: DoubleDiamondResultResponse | null): string | null {
   const selectedRole = career?.selected_role?.trim()
-  if (selectedRole && !isConfirmationAnswer(selectedRole)) return selectedRole
+  if (selectedRole && isRecommendedRole(selectedRole, career)) return selectedRole
   return career?.recommended_roles?.[0]?.label ?? null
 }
 
@@ -222,6 +222,21 @@ function isConfirmationAnswer(value: string): boolean {
   return /^(ya|iya|tidak|setuju|saya setuju|sangat setuju|sesuai|sudah sesuai)\b/i.test(
     value.trim(),
   )
+}
+
+// `selected_role` occasionally comes back holding a barrier/other free-text
+// answer instead of an actual role (backend result generation bug). Only
+// trust it once it matches one of the AI-recommended role candidates so a
+// stray answer like "Keterbatasan sumber daya" can't surface as the user's
+// peak role.
+function isRecommendedRole(
+  value: string,
+  career: DoubleDiamondResultResponse | null,
+): boolean {
+  if (isConfirmationAnswer(value)) return false
+  const roleLabels = career?.recommended_roles?.map((role) => role.label.trim()) ?? []
+  if (roleLabels.length === 0) return true
+  return roleLabels.some((label) => label.toLowerCase() === value.toLowerCase())
 }
 
 function stepLabel(step: OnboardingCurrentStep): string {

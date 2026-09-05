@@ -895,7 +895,7 @@ function deriveSelection(
 
 function resolveSelectedRole(result: DoubleDiamondResultResponse): string | null {
   const selectedRole = result.selected_role?.trim()
-  if (selectedRole && !isConfirmationAnswer(selectedRole)) return selectedRole
+  if (selectedRole && isRecommendedRole(selectedRole, result)) return selectedRole
   return result.recommended_roles?.[0]?.label ?? null
 }
 
@@ -903,6 +903,17 @@ function isConfirmationAnswer(value: string): boolean {
   return /^(ya|iya|tidak|setuju|saya setuju|sangat setuju|sesuai|sudah sesuai)\b/i.test(
     value.trim(),
   )
+}
+
+// `selected_role` occasionally comes back holding a barrier/other free-text
+// answer instead of an actual role (backend result generation bug). Only
+// trust it once it matches one of the AI-recommended role candidates so a
+// stray answer like "Keterbatasan sumber daya" can't surface as the target role.
+function isRecommendedRole(value: string, result: DoubleDiamondResultResponse): boolean {
+  if (isConfirmationAnswer(value)) return false
+  const roleLabels = result.recommended_roles?.map((role) => role.label.trim()) ?? []
+  if (roleLabels.length === 0) return true
+  return roleLabels.some((label) => label.toLowerCase() === value.toLowerCase())
 }
 function phaseTitle(phase: DoubleDiamondPhase): string {
   return {
