@@ -12,28 +12,16 @@ export const metadata: Metadata = {
 
 export default function HargaPage() {
   return (
-    <main>
+    // Tighter gap between sections on this page only — --l-section-y is the
+    // shared padding token every other landing page still uses at full size.
+    <main style={{ '--l-section-y': 'clamp(2.5rem, 6vw, 5rem)' } as React.CSSProperties}>
       <PageHero {...c.hero} />
       <PricingGroup
-        id="pencari-kerja"
-        eyebrow={c.seeker.eyebrow}
-        title={c.seeker.title}
-        lead={c.seeker.lead}
-        tiers={c.seeker.list}
-      />
-      <PricingGroup
-        id="perusahaan"
-        eyebrow={c.company.eyebrow}
-        title={c.company.title}
-        lead={c.company.lead}
-        tiers={c.company.list}
-      />
-      <PricingGroup
-        id="skill"
-        eyebrow={c.skill.eyebrow}
-        title={c.skill.title}
-        lead={c.skill.lead}
-        tiers={c.skill.list}
+        id="paket"
+        eyebrow={c.pricing.eyebrow}
+        title={c.pricing.title}
+        lead={c.pricing.lead}
+        tiers={c.pricing.list}
       />
       <FaqGroups
         id="faq-harga"
