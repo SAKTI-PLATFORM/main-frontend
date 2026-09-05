@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { caraKerja as c } from '../_content'
-import { CtaBand, EngineFlow, Prose, StatCards } from '../_components/blocks'
+import { EngineFlow } from '../_components/blocks'
 import { PageHero } from '../_components/page-hero'
 
 export const metadata: Metadata = {
@@ -13,9 +13,6 @@ export default function CaraKerjaPage() {
     <main>
       <PageHero {...c.hero} />
       <EngineFlow id="alur" {...c.flow} />
-      <StatCards id="performa" {...c.perf} />
-      <Prose id="data" {...c.privacy} />
-      <CtaBand {...c.cta} />
     </main>
   )
 }
