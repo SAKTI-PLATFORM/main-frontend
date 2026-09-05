@@ -30,6 +30,11 @@
 
   --l-ease: cubic-bezier(0.16, 1, 0.3, 1);
 
+  /* Every heading/body/display-number usage below points at these two names —
+     alias both to the single Instrument Sans instance loaded in layout.tsx. */
+  --font-space-grotesk: var(--font-instrument-sans);
+  --font-inter-tight: var(--font-instrument-sans);
+
   background: var(--l-bg);
   color: var(--l-ink);
   font-family: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;

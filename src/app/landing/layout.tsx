@@ -1,21 +1,17 @@
 import type { Metadata } from 'next'
-import { Space_Grotesk, Inter_Tight } from 'next/font/google'
+import { Instrument_Sans } from 'next/font/google'
 import { ScrollProgress, SmoothScroll } from './_components/effects'
 import { Footer } from './_components/footer'
 import { Nav } from './_components/nav'
 import './landing.css'
 
-const spaceGrotesk = Space_Grotesk({
-  variable: '--font-space-grotesk',
+// Single typeface for the whole landing page — landing.css aliases both the
+// heading (--font-space-grotesk) and body (--font-inter-tight) variables to
+// this one, so every existing usage picks it up without touching each file.
+const instrumentSans = Instrument_Sans({
+  variable: '--font-instrument-sans',
   subsets: ['latin'],
-  weight: ['500', '700'],
-  display: 'swap',
-})
-
-const interTight = Inter_Tight({
-  variable: '--font-inter-tight',
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
 })
 
@@ -40,9 +36,7 @@ export default function LandingLayout({
   children: React.ReactNode
 }) {
   return (
-    <div
-      className={`landing-root ${spaceGrotesk.variable} ${interTight.variable}`}
-    >
+    <div className={`landing-root ${instrumentSans.variable}`}>
       <SmoothScroll />
       <ScrollProgress />
       <Nav />
