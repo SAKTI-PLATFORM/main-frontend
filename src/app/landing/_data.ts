@@ -24,15 +24,13 @@ export type Stat = {
 export type NavIcon = 'briefcase' | 'gem' | 'roadmap'
 
 export const nav = {
+  // "kegunaan" is the only trigger with a hover dropdown (the mega menu
+  // below); Harga and Cara Kerja are now plain links straight to the page.
   triggers: [
-    { id: 'kegunaan', label: 'Kegunaan', kind: 'mega' as const },
-    { id: 'harga', label: 'Harga', kind: 'panel' as const, href: '/landing/harga' },
-    {
-      id: 'cara-kerja',
-      label: 'Cara Kerja',
-      kind: 'panel' as const,
-      href: '/landing/cara-kerja',
-    },
+    { id: 'beranda', label: 'Beranda', href: '/landing' },
+    { id: 'kegunaan', label: 'Kegunaan' },
+    { id: 'harga', label: 'Harga', href: '/landing/harga' },
+    { id: 'cara-kerja', label: 'Cara Kerja', href: '/landing/cara-kerja' },
   ],
   masuk: { label: 'Masuk', href: '/login' },
   cta: { label: 'Coba Gratis', href: '/register' },
@@ -94,47 +92,6 @@ export const navMega = {
           href: '/landing/untuk-perusahaan#alur',
         },
       ],
-    },
-  ],
-}
-
-/** Simple single-column dropdowns for the other triggers. */
-export const navPanels: Record<
-  string,
-  { title: string; desc: string; href: string }[]
-> = {
-  harga: [
-    {
-      title: 'Gratis untuk pencari kerja',
-      desc: 'Semua fitur inti, tanpa biaya, selamanya',
-      href: '/landing/harga#pencari-kerja',
-    },
-    {
-      title: 'Paket perusahaan',
-      desc: 'Starter, Business, sampai Enterprise/Institusi',
-      href: '/landing/harga#perusahaan',
-    },
-    {
-      title: 'Paket pengembangan skill',
-      desc: 'Gratis, Plus, dan Pro untuk coaching lebih dalam',
-      href: '/landing/harga#skill',
-    },
-  ],
-  'cara-kerja': [
-    {
-      title: 'Alur end-to-end',
-      desc: 'LLProfiler, Matchmaker, dan Talent Developer',
-      href: '/landing/cara-kerja#alur',
-    },
-    {
-      title: 'Kenapa bisa secepat ini',
-      desc: 'Target performa tiap engine',
-      href: '/landing/cara-kerja#performa',
-    },
-    {
-      title: 'Keamanan data kamu',
-      desc: 'Siapa yang bisa melihat profil hasil ekstraksi',
-      href: '/landing/cara-kerja#data',
     },
   ],
 }

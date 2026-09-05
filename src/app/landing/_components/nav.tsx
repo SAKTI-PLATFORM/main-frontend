@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { nav, navMega, navPanels, type NavIcon } from '../_data'
+import { nav, navMega, type NavIcon } from '../_data'
 import { Arrow, Magnetic } from './primitives'
 
 /* -------------------------------------------------------------- icons ----- */
@@ -184,41 +184,6 @@ function MegaMenu({ onNavigate }: { onNavigate: () => void }) {
   )
 }
 
-function SimplePanel({
-  id,
-  onNavigate,
-}: {
-  id: string
-  onNavigate: () => void
-}) {
-  const items = navPanels[id] ?? []
-  return (
-    <motion.div
-      initial="hidden"
-      animate="show"
-      variants={{ show: { transition: { staggerChildren: 0.06 } } }}
-      className="flex w-[min(22rem,calc(100vw-2rem))] flex-col"
-    >
-      {items.map((item) => (
-        <motion.div key={item.title} variants={rowVariants}>
-          <Link
-            href={item.href}
-            onClick={onNavigate}
-            className="flex flex-col gap-0.5 rounded-2xl p-3 transition-colors hover:bg-[#F3F0FF]"
-          >
-            <span className="text-[0.95rem] font-semibold tracking-[-0.01em] text-[var(--l-ink)]">
-              {item.title}
-            </span>
-            <span className="text-[0.8rem] leading-snug text-[var(--l-ink-3)]">
-              {item.desc}
-            </span>
-          </Link>
-        </motion.div>
-      ))}
-    </motion.div>
-  )
-}
-
 /* -------------------------------------------------------------- nav ------- */
 
 export function Nav() {
@@ -296,33 +261,29 @@ export function Nav() {
 
           <nav className="hidden items-center gap-1 lg:flex">
             {nav.triggers.map((t) => {
-              const isOpen = openId === t.id
               const href = 'href' in t ? (t.href as string) : undefined
-              const shared = {
-                onMouseEnter: () => {
-                  cancelClose()
-                  setOpenId(t.id)
-                },
-                onFocus: () => setOpenId(t.id),
-                'aria-expanded': isOpen,
-                className: `l-nav-link ${isOpen ? 'is-open' : ''}`,
+              // Only "Kegunaan" has a hover dropdown (the mega menu); the
+              // rest are plain links straight to their page.
+              if (href) {
+                return (
+                  <Link key={t.id} href={href} className="l-nav-link">
+                    {t.label}
+                  </Link>
+                )
               }
-              return href ? (
-                <Link
-                  key={t.id}
-                  href={href}
-                  onClick={() => setOpenId(null)}
-                  {...shared}
-                >
-                  {t.label}
-                  <Chevron open={isOpen} />
-                </Link>
-              ) : (
+              const isOpen = openId === t.id
+              return (
                 <button
                   key={t.id}
                   type="button"
+                  onMouseEnter={() => {
+                    cancelClose()
+                    setOpenId(t.id)
+                  }}
+                  onFocus={() => setOpenId(t.id)}
                   onClick={() => setOpenId(isOpen ? null : t.id)}
-                  {...shared}
+                  aria-expanded={isOpen}
+                  className={`l-nav-link ${isOpen ? 'is-open' : ''}`}
                 >
                   {t.label}
                   <Chevron open={isOpen} />
@@ -383,11 +344,7 @@ export function Nav() {
                 transition={PANEL_SPRING}
                 className="origin-top rounded-[22px] border border-[var(--l-line)] bg-white p-2.5 shadow-[0_28px_70px_-20px_rgba(20,21,29,0.35)]"
               >
-                {openId === 'kegunaan' ? (
-                  <MegaMenu onNavigate={() => setOpenId(null)} />
-                ) : (
-                  <SimplePanel id={openId} onNavigate={() => setOpenId(null)} />
-                )}
+                <MegaMenu onNavigate={() => setOpenId(null)} />
               </motion.div>
             </motion.div>
           )}
@@ -415,11 +372,23 @@ export function Nav() {
                 transition={PANEL_SPRING}
               >
                 {nav.triggers.map((t) => {
+                  const href = 'href' in t ? (t.href as string) : undefined
+                  // Only "Kegunaan" expands into a sub-list; the rest are
+                  // plain links straight to their page.
+                  if (href) {
+                    return (
+                      <Link
+                        key={t.id}
+                        href={href}
+                        onClick={() => setMobileOpen(false)}
+                        className="block border-b border-[var(--l-line)] py-3.5 text-[1.05rem] font-semibold tracking-[-0.01em] text-[var(--l-ink)] last:border-b-0"
+                      >
+                        {t.label}
+                      </Link>
+                    )
+                  }
                   const expanded = mobileSection === t.id
-                  const items =
-                    t.id === 'kegunaan'
-                      ? navMega.tabs.flatMap((tab) => tab.items)
-                      : navPanels[t.id] ?? []
+                  const items = navMega.tabs.flatMap((tab) => tab.items)
                   return (
                     <div key={t.id} className="border-b border-[var(--l-line)] last:border-b-0">
                       <button
