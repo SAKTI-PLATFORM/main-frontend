@@ -12,7 +12,11 @@ import type { DashboardResponse } from '@/types/seeker.types'
 import { handleApiError } from '@/utils/api-error'
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import type { PipelineRun, JobMatcherResult } from '@/types/career-pipeline.types'
+import type {
+  PipelineRun,
+  JobMatcherResult,
+  TalentForgerResult,
+} from '@/types/career-pipeline.types'
 
 export type DashboardState =
   | { status: 'loading' }
@@ -24,6 +28,7 @@ export type DashboardState =
       assessment: AssessmentResultResponse | null
       career: DoubleDiamondResultResponse | null
       jobMatcher: PipelineRun<JobMatcherResult> | null
+      learningPath: PipelineRun<TalentForgerResult> | null
     }
 
 export function useDashboard(): DashboardState {
@@ -44,6 +49,7 @@ export function useDashboard(): DashboardState {
         let assessment: AssessmentResultResponse | null = null
         let career: DoubleDiamondResultResponse | null = null
         let jobMatcher: PipelineRun<JobMatcherResult> | null = null
+        let learningPath: PipelineRun<TalentForgerResult> | null = null
 
         if (session?.status === 'COMPLETED') {
           const [assessmentResponse, careerResponse] = await Promise.all([
@@ -52,16 +58,20 @@ export function useDashboard(): DashboardState {
           ])
           assessment = assessmentResponse.data.data
           career = careerResponse.data.data
-          try {
-            const jobMatcherResponse = await seekerApi.getLatestJobMatches(
-              session.onboarding_session_id,
-            )
-            jobMatcher = jobMatcherResponse.data.data
-          } catch (error) {
-            if (!axios.isAxiosError(error) || error.response?.status !== 404) {
-              throw error
-            }
-          }
+          // Both pipelines are enqueued by the backend after onboarding; either
+          // may still be missing (404) while it runs. A 404 just means "not yet".
+          const [jobMatcherResult, learningPathResult] = await Promise.all([
+            seekerApi
+              .getLatestJobMatches(session.onboarding_session_id)
+              .then((response) => response.data.data)
+              .catch(tolerate404<PipelineRun<JobMatcherResult>>()),
+            seekerApi
+              .getLatestLearningPath(session.onboarding_session_id)
+              .then((response) => response.data.data)
+              .catch(tolerate404<PipelineRun<TalentForgerResult>>()),
+          ])
+          jobMatcher = jobMatcherResult
+          learningPath = learningPathResult
         }
         if (!active) return
 
@@ -152,6 +162,7 @@ export function useDashboard(): DashboardState {
           assessment,
           career,
           jobMatcher,
+          learningPath,
         })
       } catch (error) {
         if (!active) return
@@ -165,6 +176,14 @@ export function useDashboard(): DashboardState {
   }, [])
 
   return state
+}
+
+/** Swallow a 404 from an optional pipeline fetch, rethrow anything else. */
+function tolerate404<T>(): (error: unknown) => T | null {
+  return (error: unknown) => {
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null
+    throw error
+  }
 }
 
 const STEP_PROGRESS: Record<OnboardingCurrentStep, number> = {
