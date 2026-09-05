@@ -1,10 +1,15 @@
 import type { Metadata } from 'next'
-import { Figtree } from 'next/font/google'
+import { Figtree, Instrument_Sans } from 'next/font/google'
 import Providers from '@/components/layout/providers'
 import './globals.css'
 
 const figtree = Figtree({
   variable: '--font-figtree',
+  subsets: ['latin'],
+})
+
+const instrumentSans = Instrument_Sans({
+  variable: '--font-instrument-sans',
   subsets: ['latin'],
 })
 
@@ -23,7 +28,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="id" className={`${figtree.variable} h-full antialiased`}>
+    <html
+      lang="id"
+      className={`${figtree.variable} ${instrumentSans.variable} h-full antialiased`}
+    >
       <body className="min-h-full flex flex-col font-[family-name:var(--font-figtree)]">
         <Providers>{children}</Providers>
       </body>
