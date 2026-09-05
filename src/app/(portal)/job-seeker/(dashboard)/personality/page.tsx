@@ -7,7 +7,6 @@ import {
 } from '@/components/dashboard/dashboard-status'
 import { IncompleteOnboardingBanner } from '@/components/dashboard/incomplete-onboarding-banner'
 import { TraitChip } from '@/components/dashboard/trait-chip'
-import { Badge } from '@/components/ui/badge'
 import {
   Card,
   CardContent,
