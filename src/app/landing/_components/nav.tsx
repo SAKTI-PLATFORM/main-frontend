@@ -119,12 +119,13 @@ function MegaMenu({ onNavigate }: { onNavigate: () => void }) {
         {navMega.tabs.map((t) => {
           const isActive = t.id === tab
           return (
-            <button
+            <Link
               key={t.id}
-              type="button"
+              href={t.href}
+              onClick={onNavigate}
               onMouseEnter={() => setTab(t.id)}
               onFocus={() => setTab(t.id)}
-              className="relative rounded-2xl px-3.5 py-3 text-left"
+              className="relative block rounded-2xl px-3.5 py-3 text-left"
             >
               {isActive && (
                 <motion.span
@@ -153,7 +154,7 @@ function MegaMenu({ onNavigate }: { onNavigate: () => void }) {
                   </motion.p>
                 )}
               </AnimatePresence>
-            </button>
+            </Link>
           )
         })}
       </div>
@@ -296,18 +297,32 @@ export function Nav() {
           <nav className="hidden items-center gap-1 lg:flex">
             {nav.triggers.map((t) => {
               const isOpen = openId === t.id
-              return (
+              const href = 'href' in t ? (t.href as string) : undefined
+              const shared = {
+                onMouseEnter: () => {
+                  cancelClose()
+                  setOpenId(t.id)
+                },
+                onFocus: () => setOpenId(t.id),
+                'aria-expanded': isOpen,
+                className: `l-nav-link ${isOpen ? 'is-open' : ''}`,
+              }
+              return href ? (
+                <Link
+                  key={t.id}
+                  href={href}
+                  onClick={() => setOpenId(null)}
+                  {...shared}
+                >
+                  {t.label}
+                  <Chevron open={isOpen} />
+                </Link>
+              ) : (
                 <button
                   key={t.id}
                   type="button"
-                  onMouseEnter={() => {
-                    cancelClose()
-                    setOpenId(t.id)
-                  }}
-                  onFocus={() => setOpenId(t.id)}
                   onClick={() => setOpenId(isOpen ? null : t.id)}
-                  aria-expanded={isOpen}
-                  className={`l-nav-link ${isOpen ? 'is-open' : ''}`}
+                  {...shared}
                 >
                   {t.label}
                   <Chevron open={isOpen} />

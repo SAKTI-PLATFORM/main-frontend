@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRef } from 'react'
 import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import { footer } from '../_data'
@@ -45,14 +46,14 @@ export function Footer() {
                 {title}
               </motion.h4>
               <ul className="mt-5 flex flex-col gap-3">
-                {links.map((label) => (
-                  <motion.li key={label} variants={staggerItem}>
-                    <a
-                      href="#top"
+                {links.map((link) => (
+                  <motion.li key={link.label} variants={staggerItem}>
+                    <Link
+                      href={link.href}
                       className="text-sm text-[var(--l-on-dark)] transition-opacity hover:opacity-60"
                     >
-                      {label}
-                    </a>
+                      {link.label}
+                    </Link>
                   </motion.li>
                 ))}
               </ul>

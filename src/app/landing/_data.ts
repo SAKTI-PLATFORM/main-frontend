@@ -26,8 +26,13 @@ export type NavIcon = 'briefcase' | 'gem' | 'roadmap'
 export const nav = {
   triggers: [
     { id: 'kegunaan', label: 'Kegunaan', kind: 'mega' as const },
-    { id: 'harga', label: 'Harga', kind: 'panel' as const },
-    { id: 'cara-kerja', label: 'Cara Kerja', kind: 'panel' as const },
+    { id: 'harga', label: 'Harga', kind: 'panel' as const, href: '/landing/harga' },
+    {
+      id: 'cara-kerja',
+      label: 'Cara Kerja',
+      kind: 'panel' as const,
+      href: '/landing/cara-kerja',
+    },
   ],
   masuk: { label: 'Masuk', href: '/login' },
   cta: { label: 'Coba Gratis', href: '/register' },
@@ -39,6 +44,7 @@ export const navMega = {
     {
       id: 'pencari-kerja',
       label: 'Untuk Pencari Kerja',
+      href: '/landing/untuk-pencari-kerja',
       description:
         'Temukan pekerjaan yang benar-benar cocok dengan skill dan kepribadianmu, lalu tutup skill gap dengan roadmap belajar yang dipersonalisasi.',
       items: [
@@ -46,25 +52,26 @@ export const navMega = {
           icon: 'briefcase' as NavIcon,
           title: 'Cari Lowongan',
           desc: 'Jelajahi ribuan lowongan yang di-ranking sesuai profil kamu',
-          href: '#pencari-kerja',
+          href: '/landing/untuk-pencari-kerja#alur',
         },
         {
           icon: 'gem' as NavIcon,
           title: 'Cek Skill Gap',
           desc: 'Lihat skill apa yang perlu diasah untuk role impian',
-          href: '#skill',
+          href: '/landing/pengembangan-skill',
         },
         {
           icon: 'roadmap' as NavIcon,
           title: 'Roadmap Belajar',
           desc: 'Ikuti jalur belajar terarah dari hasil analisis AI',
-          href: '#cara-kerja',
+          href: '/landing/cara-kerja#alur',
         },
       ],
     },
     {
       id: 'perusahaan',
       label: 'Untuk Perusahaan',
+      href: '/landing/untuk-perusahaan',
       description:
         'Pasang lowongan sekali, biar sistem yang meranking kandidat berdasarkan skill dan pengalaman, bukan sekadar kata kunci di CV.',
       items: [
@@ -72,19 +79,19 @@ export const navMega = {
           icon: 'briefcase' as NavIcon,
           title: 'Ranking Kandidat',
           desc: 'Kandidat diurutkan otomatis berdasarkan skor kecocokan',
-          href: '#perusahaan',
+          href: '/landing/untuk-perusahaan#alur',
         },
         {
           icon: 'gem' as NavIcon,
           title: 'Screening Otomatis',
           desc: 'Pangkas waktu screening berhari-hari jadi hitungan menit',
-          href: '#perusahaan',
+          href: '/landing/untuk-perusahaan#alur',
         },
         {
           icon: 'roadmap' as NavIcon,
           title: 'Pasang Lowongan',
           desc: 'Susun detail lowongan dan kualifikasi dalam sekali isi',
-          href: '#perusahaan',
+          href: '/landing/untuk-perusahaan#alur',
         },
       ],
     },
@@ -100,29 +107,34 @@ export const navPanels: Record<
     {
       title: 'Gratis untuk pencari kerja',
       desc: 'Semua fitur inti, tanpa biaya, selamanya',
-      href: '/register',
+      href: '/landing/harga#pencari-kerja',
     },
     {
       title: 'Paket perusahaan',
-      desc: 'Skala tim rekrutmen berapa pun ukurannya',
-      href: '/register?role=recruiter',
+      desc: 'Starter, Business, sampai Enterprise/Institusi',
+      href: '/landing/harga#perusahaan',
+    },
+    {
+      title: 'Paket pengembangan skill',
+      desc: 'Gratis, Plus, dan Pro untuk coaching lebih dalam',
+      href: '/landing/harga#skill',
     },
   ],
   'cara-kerja': [
     {
-      title: 'Upload CV kamu',
-      desc: 'Sistem membaca pengalaman & skill otomatis',
-      href: '#cara-kerja',
+      title: 'Alur end-to-end',
+      desc: 'LLProfiler, Matchmaker, dan Talent Developer',
+      href: '/landing/cara-kerja#alur',
     },
     {
-      title: 'Cek & sunting hasilnya',
-      desc: 'Kamu pegang kendali penuh atas datamu',
-      href: '#cara-kerja',
+      title: 'Kenapa bisa secepat ini',
+      desc: 'Target performa tiap engine',
+      href: '/landing/cara-kerja#performa',
     },
     {
-      title: 'Dapat rekomendasi personal',
-      desc: 'Lowongan cocok plus saran menutup skill gap',
-      href: '#cara-kerja',
+      title: 'Keamanan data kamu',
+      desc: 'Siapa yang bisa melihat profil hasil ekstraksi',
+      href: '/landing/cara-kerja#data',
     },
   ],
 }
@@ -314,9 +326,22 @@ export const footer = {
   tagline:
     'Platform pencocokan kerja berbasis AI yang bantu pencari kerja, perusahaan, dan siapa pun yang mau naik level skill di Indonesia.',
   columns: {
-    Produk: ['Buat Pencari Kerja', 'Buat Perusahaan', 'Pengembangan Skill', 'Cara Kerja'],
-    Perusahaan: ['Tentang Kami', 'Harga', 'Hubungi Kami'],
-    Bantuan: ['FAQ', 'Kebijakan Privasi', 'Syarat & Ketentuan'],
-  } as Record<string, string[]>,
+    Produk: [
+      { label: 'Buat Pencari Kerja', href: '/landing/untuk-pencari-kerja' },
+      { label: 'Buat Perusahaan', href: '/landing/untuk-perusahaan' },
+      { label: 'Pengembangan Skill', href: '/landing/pengembangan-skill' },
+      { label: 'Cara Kerja', href: '/landing/cara-kerja' },
+    ],
+    Perusahaan: [
+      { label: 'Tentang Kami', href: '/landing/tentang-kami' },
+      { label: 'Harga', href: '/landing/harga' },
+      { label: 'Hubungi Kami', href: '/landing/kontak' },
+    ],
+    Bantuan: [
+      { label: 'FAQ', href: '/landing/faq' },
+      { label: 'Kebijakan Privasi', href: '#' },
+      { label: 'Syarat & Ketentuan', href: '#' },
+    ],
+  } as Record<string, { label: string; href: string }[]>,
   copyright: '© 2026 SAKTI. Semua hak dilindungi.',
 }
