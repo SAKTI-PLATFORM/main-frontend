@@ -21,6 +21,7 @@ import {
   SplitText,
   Stagger,
   staggerItem,
+  useMediaQuery,
 } from './primitives'
 import type { Cta } from './page-hero'
 
@@ -203,6 +204,100 @@ export type EngineStep = {
   points: string[]
 }
 
+function EngineStepCard({ step, index }: { step: EngineStep; index: number }) {
+  const ref = useRef<HTMLElement>(null)
+  const reduced = useReducedMotion()
+  const stacks = useMediaQuery('(min-width: 768px)')
+  const dark = index % 2 === 1
+
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ['start start', 'end start'],
+  })
+  const scale = useTransform(scrollYProgress, [0, 1], [1, 0.9])
+  const opacity = useTransform(scrollYProgress, [0, 1], [1, 0.35])
+  const rotateX = useTransform(scrollYProgress, [0, 1], [0, 9])
+
+  const animate = stacks && !reduced
+
+  return (
+    <motion.article
+      ref={ref}
+      className={stacks ? 'l-stack__item' : ''}
+      style={{
+        ...(stacks ? { top: `calc(var(--l-nav-h) + ${1.75 + index * 0.85}rem)` } : {}),
+        ...(animate ? { transformPerspective: 1200, scale, opacity, rotateX } : {}),
+      }}
+    >
+      <div
+        className={`overflow-hidden rounded-[26px] border p-7 sm:p-10 lg:p-12 ${
+          dark
+            ? 'l-panel-dark border-transparent'
+            : 'border-[var(--l-line)] bg-[var(--l-bg-alt)]'
+        }`}
+      >
+        <div className="flex items-start justify-between gap-6">
+          <Reveal variant="left" distance={16}>
+            <span className="l-eyebrow">{step.name}</span>
+          </Reveal>
+          <Reveal variant="scale" distance={30}>
+            <span
+              className={`-mt-2 block text-[clamp(2.5rem,6vw,5rem)] font-medium leading-none tracking-[-0.04em] [font-family:var(--font-space-grotesk)] ${
+                dark
+                  ? 'text-[rgba(234,232,232,0.24)]'
+                  : 'text-[rgba(20,21,29,0.12)]'
+              }`}
+            >
+              {step.number}
+            </span>
+          </Reveal>
+        </div>
+
+        <SplitText
+          as="h3"
+          text={step.title}
+          className="mt-5 max-w-[20ch] text-[clamp(1.45rem,3vw,2.4rem)] leading-[1.06]"
+        />
+
+        <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_1fr] lg:gap-12">
+          <Reveal delay={0.05} variant="blur">
+            <p className={`l-lead ${dark ? 'text-[var(--l-on-dark-2)]' : ''}`}>
+              {step.desc}
+            </p>
+          </Reveal>
+          <ol className="flex flex-col">
+            {step.points.map((p, pi) => (
+              <Reveal
+                as="li"
+                key={pi}
+                delay={pi * 0.07}
+                variant="left"
+                distance={18}
+                className={`flex items-baseline gap-4 border-t py-3.5 text-[0.96rem] ${
+                  dark ? 'border-[var(--l-on-dark-line)]' : 'border-[var(--l-line)]'
+                } ${pi === step.points.length - 1 ? 'border-b' : ''}`}
+              >
+                <span
+                  className={`shrink-0 text-xs font-medium [font-family:var(--font-space-grotesk)] ${
+                    dark ? 'text-[var(--l-on-dark-2)]' : 'text-[var(--l-ink-3)]'
+                  }`}
+                >
+                  0{pi + 1}
+                </span>
+                <span
+                  className={dark ? 'text-[var(--l-on-dark)]' : 'text-[var(--l-ink-2)]'}
+                >
+                  {p}
+                </span>
+              </Reveal>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </motion.article>
+  )
+}
+
 export function EngineFlow({
   id,
   eyebrow,
@@ -219,81 +314,10 @@ export function EngineFlow({
   return (
     <SectionShell id={id}>
       <SectionHeading eyebrow={eyebrow} headline={title} subtext={lead} />
-      <div className="mt-14 flex flex-col gap-5 md:mt-20 md:gap-7">
-        {steps.map((step, i) => {
-          const dark = i % 2 === 1
-          return (
-            <Reveal
-              key={step.number}
-              as="article"
-              variant="up"
-              distance={40}
-              className={`overflow-hidden rounded-[26px] border p-7 sm:p-10 lg:p-12 ${
-                dark
-                  ? 'l-panel-dark border-transparent'
-                  : 'border-[var(--l-line)] bg-[var(--l-bg-alt)]'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-6">
-                <span className="l-eyebrow">{step.name}</span>
-                <span
-                  className={`-mt-2 text-[clamp(2.5rem,6vw,5rem)] font-medium leading-none tracking-[-0.04em] [font-family:var(--font-space-grotesk)] ${
-                    dark
-                      ? 'text-[rgba(234,232,232,0.24)]'
-                      : 'text-[rgba(20,21,29,0.12)]'
-                  }`}
-                >
-                  {step.number}
-                </span>
-              </div>
-              <h3 className="mt-5 max-w-[20ch] text-[clamp(1.45rem,3vw,2.4rem)] leading-[1.06]">
-                {step.title}
-              </h3>
-              <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_1fr] lg:gap-12">
-                <p
-                  className={`l-lead ${dark ? 'text-[var(--l-on-dark-2)]' : ''}`}
-                >
-                  {step.desc}
-                </p>
-                <ol className="flex flex-col">
-                  {step.points.map((p, pi) => (
-                    <Reveal
-                      as="li"
-                      key={pi}
-                      delay={pi * 0.07}
-                      variant="left"
-                      distance={18}
-                      className={`flex items-baseline gap-4 border-t py-3.5 text-[0.96rem] ${
-                        dark
-                          ? 'border-[var(--l-on-dark-line)]'
-                          : 'border-[var(--l-line)]'
-                      } ${pi === step.points.length - 1 ? 'border-b' : ''}`}
-                    >
-                      <span
-                        className={`shrink-0 text-xs font-medium [font-family:var(--font-space-grotesk)] ${
-                          dark
-                            ? 'text-[var(--l-on-dark-2)]'
-                            : 'text-[var(--l-ink-3)]'
-                        }`}
-                      >
-                        0{pi + 1}
-                      </span>
-                      <span
-                        className={
-                          dark
-                            ? 'text-[var(--l-on-dark)]'
-                            : 'text-[var(--l-ink-2)]'
-                        }
-                      >
-                        {p}
-                      </span>
-                    </Reveal>
-                  ))}
-                </ol>
-              </div>
-            </Reveal>
-          )
-        })}
+      <div className="l-stack mt-14 md:mt-20">
+        {steps.map((step, i) => (
+          <EngineStepCard key={step.number} step={step} index={i} />
+        ))}
       </div>
     </SectionShell>
   )
