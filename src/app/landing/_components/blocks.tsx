@@ -364,13 +364,13 @@ export function TabbedProfiles({
               {active === i && (
                 <motion.span
                   layoutId="profile-tab"
-                  className="absolute inset-0 -z-10 rounded-full bg-[var(--l-ink)]"
+                  className="absolute inset-0 -z-10 rounded-full bg-[var(--l-bg)] shadow-[0_2px_10px_rgba(20,21,29,0.12)]"
                   transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                 />
               )}
               <span
                 className={
-                  active === i ? 'text-[var(--l-bg)]' : 'text-[var(--l-ink-2)]'
+                  active === i ? 'text-[var(--l-ink)]' : 'text-[var(--l-ink-2)]'
                 }
               >
                 {t.label}
