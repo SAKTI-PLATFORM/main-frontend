@@ -24,6 +24,7 @@ import {
   TriangleAlert,
   Users,
   Waypoints,
+  X,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -90,8 +91,8 @@ export default function JobSeekerHomePage() {
 
   return (
     <div className="px-5 py-4 sm:px-8">
-      <div className={cn('mx-auto grid max-w-[1400px] items-start gap-4', psikometri ? 'xl:grid-cols-[minmax(0,1fr)_minmax(340px,1fr)]' : 'xl:grid-cols-[minmax(0,1.12fr)_minmax(340px,0.88fr)]')}>
-        <div className="min-w-0 space-y-3">
+      <div className={cn('mx-auto grid max-w-[1400px] items-stretch gap-4', psikometri ? 'xl:grid-cols-[minmax(0,1fr)_minmax(340px,1fr)]' : 'xl:grid-cols-[minmax(0,1.12fr)_minmax(340px,0.88fr)]')}>
+        <div className="min-w-0 flex flex-col space-y-3">
           <GreetingBlock profile={data.profile} />
 
           {psikometri ? (
@@ -110,7 +111,7 @@ export default function JobSeekerHomePage() {
         {psikometri ? (
           <SaktiInsightsPanel assessment={assessment} career={career} targetRole={data.profile.targetRole} />
         ) : (
-          <aside className="rounded-lg bg-white ring-1 ring-[#ECECF2]">
+          <aside className="flex flex-col rounded-lg bg-white ring-1 ring-[#ECECF2]">
             <CareerForecastsSection career={career} jobMatcher={jobMatcher} />
             <div className="mx-5 border-t border-[#EFEFF4]" />
             <ProfileCompletionSection session={session} />
@@ -192,14 +193,16 @@ function FeatureLinks() {
   const { view, setView } = useDashboardView();
 
   return (
-    <div className="grid grid-cols-3 divide-x divide-[#EEEEF4]">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 my-5">
       <FeatureAction icon={Brain} active={view === 'psikometri'} onClick={() => setView('psikometri')}>
         Psikometri Hasil Sakti
       </FeatureAction>
       <FeatureAction icon={Library} href="/job-seeker/learning-paths">
         Roadmap Belajar
       </FeatureAction>
-      <FeatureAction icon={Bot}>Chatbot Sakti</FeatureAction>
+      <FeatureAction icon={Bot} href="/job-seeker/chatbot">
+        Chatbot Sakti
+      </FeatureAction>
     </div>
   );
 }
@@ -207,11 +210,11 @@ function FeatureLinks() {
 function FeatureAction({ children, href, onClick, icon: Icon, active }: { children: React.ReactNode; href?: string; onClick?: () => void; icon: typeof Brain; active?: boolean }) {
   const inner = (
     <>
-      <Icon className={cn('size-4 transition-colors', active ? 'text-[#4138D8]' : 'text-[#9293A2] group-hover:text-[#4138D8]')} />
-      <span className={cn('text-[11px] font-medium leading-4', active ? 'text-[#4138D8]' : 'text-[#5C5C6A]')}>{children}</span>
+      <Icon className={cn('size-5 shrink-0 transition-colors', active ? 'text-[#4138D8]' : 'text-[#9293A2] group-hover:text-[#4138D8]')} />
+      <span className={cn('text-[12px] font-medium leading-tight', active ? 'text-[#4138D8]' : 'text-[#5C5C6A]')}>{children}</span>
     </>
   );
-  const classes = 'group flex flex-col items-start gap-1.5 px-3 text-left first:pl-0 last:pr-0';
+  const classes = 'group flex items-center gap-2 text-left';
 
   if (href) {
     return (
@@ -336,7 +339,7 @@ function SkillGapCard({ jobMatcher }: { jobMatcher: JobMatcherRun }) {
 
   return (
     <section className="bg-white p-4 sm:p-5">
-      <h2 className="font-heading text-[18px] leading-[27px] font-bold text-[#20202A]">Analisis Skill Gap</h2>
+      <h2 className="font-heading text-[18px] leading-[27px] font-bold text-[#4A4A4A]">Analisis Skill Gap</h2>
 
       {gaps.length > 0 ? (
         <>
@@ -436,13 +439,12 @@ function SkillGapCard({ jobMatcher }: { jobMatcher: JobMatcherRun }) {
 }
 
 function PsychometricAccordion({ assessment, career }: { assessment: AssessmentResultResponse | null; career: DoubleDiamondResultResponse | null }) {
-  // A true accordion: opening one section closes the other instead of
-  // letting both sit open (or both closed) independently.
+
   const [openSection, setOpenSection] = useState<'ocean' | 'riasec' | null>('ocean');
   const confidence = career != null ? normalizeConfidence(career.confidence_score) : null;
 
   return (
-    <div className="overflow-hidden rounded-lg bg-white ring-1 ring-[#ECECF2]">
+    <div className="overflow-hidden rounded-lg bg-white ring-1 ring-[#ECECF2]"> 
       <AccordionRow
         open={openSection === 'ocean'}
         onToggle={() => setOpenSection((current) => (current === 'ocean' ? null : 'ocean'))}
@@ -470,9 +472,17 @@ function PsychometricAccordion({ assessment, career }: { assessment: AssessmentR
 
       <div className="border-t border-[#EFEFF4]" />
 
-      <AccordionRow open={openSection === 'riasec'} onToggle={() => setOpenSection((current) => (current === 'riasec' ? null : 'riasec'))} title="RIASEC Alignment" subtitle="Holland code dari 3 tipe tertinggi">
-        {assessment?.riasec ? <RiasecContent riasec={assessment.riasec} /> : <EmptyText>Selesaikan asesmen RIASEC untuk melihat Holland code-mu.</EmptyText>}
-      </AccordionRow>
+      <div className="flex-1">
+        <AccordionRow open={openSection === 'riasec'} onToggle={() => setOpenSection((current) => (current === 'riasec' ? null : 'riasec'))} title="RIASEC Alignment" subtitle="Holland code dari 3 tipe tertinggi">
+          {assessment?.riasec ? (
+            <>
+              <RiasecContent riasec={assessment.riasec} />
+            </>
+          ) : (
+            <EmptyText>Selesaikan asesmen RIASEC untuk melihat Holland code-mu.</EmptyText>
+          )}
+        </AccordionRow>
+      </div>
     </div>
   );
 }
@@ -568,6 +578,7 @@ function BarChartSvg({ bars, accent = '#3D28C9', muted = '#C9BEF3' }: { bars: Ar
 }
 
 function SaktiInsightsPanel({ assessment, career, targetRole }: { assessment: AssessmentResultResponse | null; career: DoubleDiamondResultResponse | null; targetRole: string | null }) {
+  const [showModal, setShowModal] = useState(false);
   const narrative = career?.career_summary?.trim() || assessment?.career_profile_summary?.trim() || null;
 
   if (!assessment && !career) {
@@ -589,21 +600,16 @@ function SaktiInsightsPanel({ assessment, career, targetRole }: { assessment: As
   const strengthLead = firstSentence(career?.work_style_summary) || 'Aspek yang paling menonjol dari profil kariermu.';
   const developmentLead = firstSentence(career?.readiness_summary) || 'Area yang paling berdampak untuk kamu kuatkan berikutnya.';
 
-  return (
-    <section className="space-y-3 rounded-lg bg-white p-4 ring-1 ring-[#ECECF2] sm:p-5">
-      <div className="flex items-center gap-2">
-        <Image src="/logo-mark.png" alt="" width={24} height={24} className="size-6" />
-        <h2 className="font-heading text-[18px] leading-[27px] font-bold text-[#3B2FB5]">Sakti Insights</h2>
-      </div>
-
-      <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-[#5003FF] to-[#4714BC] p-3 text-white">
+  const renderContent = (clamped = false) => (
+    <>
+      <div className="relative overflow-hidden rounded-lg bg-gradient-to-r from-[#5003FF] to-[#4714BC] p-3 text-white shrink-0">
         <Image src="/logo-dash.png" alt="" width={265} height={276} className="pointer-events-none absolute -right-4 -top-6 w-1/2 max-w-none select-none" />
         <p className="relative text-[11px] font-medium text-white/70">Potensi puncak Karir</p>
         <p className="relative mt-0.5 text-lg font-bold">{peakRole || 'Menunggu hasil eksplorasi karier'}</p>
       </div>
 
       {narrative ? (
-        <div className="space-y-3 text-sm line-clamp-5 text-justify leading-6 text-[#5C5C6A]">
+        <div className={cn("space-y-3 text-sm text-justify leading-6 text-[#5C5C6A] shrink-0", clamped && "line-clamp-4")}>
           <p>{narrative}</p>
           {career?.work_style_summary && career.work_style_summary.trim() !== narrative && <p>{career.work_style_summary}</p>}
         </div>
@@ -612,7 +618,7 @@ function SaktiInsightsPanel({ assessment, career, targetRole }: { assessment: As
       )}
 
       {competency && (
-        <div>
+        <div className="shrink-0">
           <p className="text-xs font-medium text-[#9A9AAB]">Ringkasan tentang dirimu</p>
           <div className="mt-1.5 grid gap-2 sm:grid-cols-3">
             <ScoreTile tone="violet" icon={Target} value={competency.task} label="Task-related" description="Problem solving, analytical thinking, dan perencanaan teknis" />
@@ -623,14 +629,14 @@ function SaktiInsightsPanel({ assessment, career, targetRole }: { assessment: As
       )}
 
       {strengths.length > 0 || barriers.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 shrink-0">
           <div>
             <p className="flex items-center gap-1.5 text-sm font-bold text-[#20202A]">
               <BarChart2 className="size-4 text-emerald-600" />
               Kekuatan
             </p>
-            <p className="mt-1 text-xs leading-5 text-[#6C6C7A]">{strengthLead}</p>
-            <ul className="mt-1.5 space-y-1">
+            <p className={cn("mt-1 text-xs leading-5 text-[#6C6C7A]", clamped && "line-clamp-2")}>{strengthLead}</p>
+            <ul className={cn("mt-1.5 space-y-1", clamped && "hidden")}>
               {strengths.map((item) => (
                 <li key={item} className="flex gap-2 text-xs leading-5 text-[#4B4B5C]">
                   <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" />
@@ -644,8 +650,8 @@ function SaktiInsightsPanel({ assessment, career, targetRole }: { assessment: As
               <Users className="size-4 text-amber-600" />
               Area Pengembangan
             </p>
-            <p className="mt-1 text-justify text-xs leading-5 text-[#6C6C7A]">{developmentLead}</p>
-            <ul className="mt-1.5 space-y-1">
+            <p className={cn("mt-1 text-justify text-xs leading-5 text-[#6C6C7A]", clamped && "line-clamp-2")}>{developmentLead}</p>
+            <ul className={cn("mt-1.5 space-y-1", clamped && "hidden")}>
               {barriers.map((item) => (
                 <li key={item} className="flex gap-2 text-xs leading-5 text-[#4B4B5C]">
                   <CircleAlert className="mt-0.5 size-4 shrink-0 text-amber-500" />
@@ -659,7 +665,7 @@ function SaktiInsightsPanel({ assessment, career, targetRole }: { assessment: As
         <EmptyText>Kekuatan dan area pengembangan muncul setelah proses Double Diamond selesai.</EmptyText>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 pt-4 shrink-0 relative z-10" onClick={(e) => e.stopPropagation()}>
         <Link href="/job-seeker/learning-paths" className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#3E1DD1] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#3315B8]">
           <Briefcase className="size-4" />
           Jelajahi Roadmapmu →
@@ -672,7 +678,55 @@ function SaktiInsightsPanel({ assessment, career, targetRole }: { assessment: As
           Cari Pekerjaan
         </Link>
       </div>
-    </section>
+    </>
+  );
+
+  return (
+    <>
+      <section 
+        className="flex flex-col space-y-3 rounded-lg bg-white p-4 ring-1 ring-[#ECECF2] sm:p-5 max-h-[80vh] xl:max-h-[640px] overflow-hidden cursor-pointer transition-shadow relative group"
+        onClick={() => setShowModal(true)}
+      >
+        <div className="flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            <Image src="/logo-mark.png" alt="" width={24} height={24} className="size-6" />
+            <h2 className="font-heading text-[18px] leading-[27px] font-bold text-[#3B2FB5]">Sakti Insights</h2>
+          </div>
+          <button className="text-[11px] font-bold text-[#4138D8] opacity-0 group-hover:opacity-100 transition-opacity">
+            Lihat Lengkap →
+          </button>
+        </div>
+        
+        {renderContent(true)}
+        
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white via-white/80 to-transparent pointer-events-none" />
+      </section>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" onClick={() => setShowModal(false)}>
+          <div 
+            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl relative animate-in fade-in zoom-in-95" 
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#EFEFF4] pb-4 sticky top-0 bg-white z-10 px-5 pt-5 sm:px-7 sm:pt-7">
+              <div className="flex items-center gap-2">
+                <Image src="/logo-mark.png" alt="" width={24} height={24} className="size-6" />
+                <h2 className="font-heading text-[20px] leading-[27px] font-bold text-[#3B2FB5]">Sakti Insights</h2>
+              </div>
+              <button 
+                onClick={() => setShowModal(false)}
+                className="rounded-lg p-2 text-[#9A9AAB] hover:bg-[#F4F3FB] hover:text-[#4138D8] transition"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <div className="flex flex-col space-y-3 p-5 sm:p-7">
+              {renderContent()}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -684,16 +738,16 @@ function ScoreTile({ value, label, description, tone, icon: Icon }: { value: num
   }[tone];
 
   return (
-    <div className={cn('rounded-lg p-3', tones)}>
-      <p className="text-2xl font-bold leading-none">
+    <div className={cn('rounded-lg p-2.5', tones)}>
+      <p className="text-xl font-bold leading-none">
         {value}
-        <span className="ml-1 text-xs font-medium opacity-70">pts</span>
+        <span className="ml-1 text-[10px] font-medium opacity-70">pts</span>
       </p>
-      <p className="mt-1.5 flex items-center gap-1 text-[13px] font-semibold">
-        <Icon className="size-3.5" />
+      <p className="mt-1 flex items-center gap-1 text-[12px] font-semibold">
+        <Icon className="size-3" />
         {label}
       </p>
-      <p className="mt-1 text-[11px] leading-4 opacity-70">{description}</p>
+      <p className="mt-0.5 text-[10px] leading-snug opacity-70">{description}</p>
     </div>
   );
 }
@@ -703,14 +757,35 @@ function EmptyText({ children }: { children: React.ReactNode }) {
 }
 
 function CareerForecastsSection({ career, jobMatcher }: { career: DoubleDiamondResultResponse | null; jobMatcher: JobMatcherRun }) {
-  const roles = career?.recommended_roles?.slice(0, 3) ?? [];
+  const hasMatches = jobMatcher?.status === 'COMPLETED' && (jobMatcher.result?.career_match_results?.length ?? 0) > 0;
+  let roles: Array<{ code: string; label: string; score: number; reason?: string }> = [];
+
+  if (hasMatches) {
+    const matches = jobMatcher.result!.career_match_results;
+    roles = [...matches]
+      .sort((a, b) => b.total_match_score - a.total_match_score)
+      .slice(0, 5)
+      .map((r) => ({
+        code: r.role_id,
+        label: r.role_name,
+        score: r.total_match_score,
+        reason: r.match_reason,
+      }));
+  } else {
+    roles = (career?.recommended_roles ?? []).slice(0, 5).map((r) => ({
+      code: r.code,
+      label: r.label,
+      score: r.score,
+      reason: r.reason,
+    }));
+  }
+
   const companies = topCompanies(jobMatcher, 3);
-  const remaining = Math.max((career?.recommended_roles?.length ?? 0) - 3, 0);
 
   return (
-    <section className="p-4">
+    <section className="flex flex-1 flex-col p-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-heading text-[20px] leading-[27px] font-bold text-[#20202A]">Career Forecasts</h2>
+        <h2 className="font-heading text-[20px] leading-[27px] font-bold text-[#4A4A4A]">Career Forecasts</h2>
         <Binoculars className="size-5 text-[#9293A2]" />
       </div>
 
@@ -739,9 +814,9 @@ function CareerForecastsSection({ career, jobMatcher }: { career: DoubleDiamondR
         <p className="mt-3 rounded-lg bg-[#FAFAFC] p-4 text-center text-xs leading-5 text-[#8A8A98]">Rekomendasi role muncul setelah rangkaian onboarding sel esai.</p>
       )}
 
-      <Link href="/job-seeker/job-matches" className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-[#3E1DD1] px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-[#3315B8]">
+      <Link href="/job-seeker/job-matches" className="mt-auto flex w-full items-center justify-center gap-2 rounded-lg bg-[#3E1DD1] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#3315B8]">
         <BriefcaseBusiness className="size-4" />
-        Lihat Posisi lainnya →
+        Lihat Selengkapnya
       </Link>
     </section>
   );
@@ -766,7 +841,7 @@ function ProfileCompletionSection({ session }: { session: OnboardingSessionRespo
   return (
     <section className="p-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-heading text-[18px] leading-[27px] font-bold text-[#20202A]">Kelengkapan Profil</h2>
+        <h2 className="font-heading text-[18px] leading-[27px] font-bold text-[#4A4A4A]">Kelengkapan Profil</h2>
         <CircleUser className="size-5 text-[#9293A2]" />
       </div>
 
@@ -792,7 +867,7 @@ function ProfileCompletionSection({ session }: { session: OnboardingSessionRespo
                   {isDone ? <Check className="size-3.5" /> : index + 1}
                 </span>
               )}
-              {index < ONBOARDING_STEPS.length - 1 && <span className={cn('mx-1.5 h-px flex-1', isDone ? 'bg-[#4138D8]/40' : 'bg-[#E4E4EC]')} />}
+              {index < ONBOARDING_STEPS.length - 1 && <span className={cn('h-px flex-1', isDone ? 'bg-[#4138D8]/40' : 'bg-[#E4E4EC]')} />}
             </div>
           );
         })}
