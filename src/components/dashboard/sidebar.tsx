@@ -40,7 +40,7 @@ const NAVIGATION: Array<{ label: string; items: NavigationItem[] }> = [
     label: 'Overview',
     items: [
       { label: 'Dashboard', href: '/job-seeker', icon: House },
-      { label: 'Sakti Chatbot', icon: Bot, chevron: true },
+      { label: 'Sakti Chatbot', href: '/job-seeker/chatbot', icon: Bot, chevron: true },
     ],
   },
   {
