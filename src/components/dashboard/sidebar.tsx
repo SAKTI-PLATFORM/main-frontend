@@ -105,7 +105,9 @@ export function Sidebar() {
   const pathname = usePathname()
   const dispatch = useAppDispatch()
   const profile = useAppSelector((state) => state.auth.user)
-  const [collapsed, setCollapsed] = useCollapsed()
+  const [userCollapsed, setUserCollapsed] = useCollapsed()
+  const isChatbot = pathname.startsWith('/job-seeker/chatbot')
+  const collapsed = isChatbot || userCollapsed
 
   useEffect(() => {
     if (profile) return
@@ -139,10 +141,10 @@ export function Sidebar() {
         {collapsed ? (
           <button
             type="button"
-            onClick={() => setCollapsed(false)}
+            onClick={() => !isChatbot && setUserCollapsed(false)}
             aria-label="Buka sidebar"
             title="Buka sidebar"
-            className="flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-[#F4F3FB]"
+            className={cn("flex size-9 items-center justify-center rounded-lg transition-colors hover:bg-[#F4F3FB]", isChatbot && "cursor-default hover:bg-transparent")}
           >
             <Image
               src="/logo-mark.png"
@@ -165,7 +167,7 @@ export function Sidebar() {
             />
             <button
               type="button"
-              onClick={() => setCollapsed(true)}
+              onClick={() => setUserCollapsed(true)}
               aria-label="Tutup sidebar"
               title="Tutup sidebar"
               className="flex size-7 items-center justify-center rounded-md border border-[#E4E3F0] text-[#8E8E9C] transition-colors hover:bg-[#F4F3FB] hover:text-[#4138D8]"
