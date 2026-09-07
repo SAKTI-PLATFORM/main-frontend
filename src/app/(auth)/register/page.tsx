@@ -11,6 +11,7 @@ import RoleTab from '@/components/auth/role-tab'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
 import { ROUTES } from '@/constants'
 import { setToken, setUser } from '@/features/auth'
 import { useAppDispatch } from '@/hooks/redux'
@@ -63,10 +64,10 @@ export default function RegisterPage() {
     }
   }
 
-  async function handleGoogleSuccess(accessToken: string) {
+  async function handleGoogleSuccess(idToken: string) {
     setLoading(true)
     try {
-      const response = await authApi.googleAuth({ idToken: accessToken, role })
+      const response = await authApi.googleAuth({ idToken, role })
       await redirectByRole(response.data.data.token)
     } catch (error: unknown) {
       handleApiError(error)
@@ -138,10 +139,9 @@ export default function RegisterPage() {
             </AuthField>
 
             <AuthField label="Password" htmlFor="password">
-              <Input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 autoComplete="new-password"
                 value={form.password}
                 onChange={handleChange}

@@ -1,11 +1,11 @@
 'use client'
 
-import { useGoogleLogin } from '@react-oauth/google'
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
 import { Button } from '@/components/ui/button'
 
 interface GoogleLoginButtonProps {
   label: string
-  onSuccess: (accessToken: string) => void
+  onSuccess: (idToken: string) => void
   onError?: () => void
   disabled?: boolean
   enabled?: boolean
@@ -19,38 +19,44 @@ export default function GoogleLoginButton({
   enabled = true,
 }: GoogleLoginButtonProps) {
   if (!enabled) {
-    return (
-      <GoogleButton
-        label={label}
-        disabled={disabled}
-        onClick={onError}
-      />
-    )
+    return <GoogleButton label={label} disabled={disabled} onClick={onError} />
+  }
+
+  function handleCredential(response: CredentialResponse) {
+    // `credential` is the signed ID token JWT — the backend verifies it with
+    // google-auth-library's verifyIdToken. useGoogleLogin()'s access_token
+    // flow can't be used here: an access token is opaque, not a JWT, so
+    // verifyIdToken would reject every single sign-in.
+    if (!response.credential) {
+      onError?.()
+      return
+    }
+    onSuccess(response.credential)
   }
 
   return (
-    <ConnectedGoogleButton
-      label={label}
-      onSuccess={onSuccess}
-      onError={onError}
-      disabled={disabled}
-    />
-  )
-}
-
-function ConnectedGoogleButton({
-  label,
-  onSuccess,
-  onError,
-  disabled,
-}: Omit<GoogleLoginButtonProps, 'enabled'>) {
-  const login = useGoogleLogin({
-    onSuccess: ({ access_token }) => onSuccess(access_token),
-    onError: onError,
-  })
-
-  return (
-    <GoogleButton label={label} disabled={disabled} onClick={() => login()} />
+    <div className="relative h-[43px] w-full">
+      <GoogleButton label={label} disabled={disabled} />
+      {/*
+        Google only issues an ID token through its own rendered button (or
+        One Tap) — there's no API to get one from a fully custom button click.
+        So the real "Sign in with Google" button sits here, stretched over
+        our custom-styled one and made invisible, and actually receives the
+        click; `overflow-hidden` clips it to the same box as the button
+        beneath it, so the two always match up.
+      */}
+      <div
+        className={`absolute inset-0 overflow-hidden opacity-0 ${disabled ? 'pointer-events-none' : ''}`}
+        aria-hidden="true"
+      >
+        <GoogleLogin
+          onSuccess={handleCredential}
+          onError={onError}
+          width={384}
+          text={label.toLowerCase().includes('sign up') ? 'signup_with' : 'signin_with'}
+        />
+      </div>
+    </div>
   )
 }
 
