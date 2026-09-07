@@ -9,7 +9,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { CvProcessingGate } from '@/components/onboarding/cv-processing-gate'
 import { LikertScale } from '@/components/onboarding/likert-scale'
+import { onboardingStageIndex, OnboardingSidebar } from '@/components/onboarding/onboarding-sidebar'
 import type {
   AssessmentQuestionsResponse,
   AssessmentResultResponse,
@@ -25,6 +27,7 @@ import type {
 import { handleApiError } from '@/utils/api-error'
 import { Toast } from '@/utils/toast'
 import {
+  AlertCircle,
   ArrowRight,
   Check,
   CheckCircle2,
@@ -34,16 +37,21 @@ import {
   Save,
   Sparkles,
 } from 'lucide-react'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 
-const JOURNEY = [
-  { title: 'Profil', caption: 'CV & identitas' },
-  { title: 'Psikometri', caption: 'OCEAN & RIASEC' },
-  { title: 'Eksplorasi Karier', caption: 'Double Diamond' },
-  { title: 'Selesai', caption: 'Preferensi & siap matching' },
-] as const
+const STEP_LABELS: Record<OnboardingCurrentStep, string> = {
+  CV_UPLOAD: 'Upload CV',
+  IDENTITY: 'Tinjau profil',
+  OCEAN: 'OCEAN',
+  RIASEC: 'RIASEC',
+  DIVERGE_1: 'Eksplorasi bidang',
+  CONVERGE_1: 'Pilih bidang',
+  DIVERGE_2: 'Eksplorasi role',
+  CONVERGE_2: 'Pilih role',
+  PREFERENCE: 'Ringkasan akhir',
+  COMPLETE: 'Selesai',
+}
 
 const DD_PHASES: DoubleDiamondPhase[] = [
   'DIVERGE_1',
@@ -58,56 +66,44 @@ export function CareerJourney({
   initialSession: OnboardingSessionResponse
 }) {
   const [session, setSession] = useState(initialSession)
-  const activeJourney = journeyIndex(session.current_step)
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card px-3 py-5 md:flex">
-        <div className="flex items-center px-2 pb-6">
-          <Image
-            src="/logo.png"
-            alt="SAKTI AI"
-            width={160}
-            height={80}
-            className="h-9 w-auto"
-            priority
-          />
-        </div>
-        <nav className="flex flex-col gap-1" aria-label="Tahapan onboarding">
-          {JOURNEY.map((item, index) => {
-            const active = index === activeJourney
-            const complete = index < activeJourney
-            return (
-              <div
-                key={item.title}
-                className={`grid min-h-16 grid-cols-[28px_1fr] items-center gap-3 rounded-lg px-3 py-2 ${active ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}
-              >
-                <span
-                  className={`flex size-7 items-center justify-center rounded-full text-xs font-semibold ${complete ? 'bg-emerald-600 text-white' : active ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
-                >
-                  {complete ? <Check className="size-4" /> : index + 1}
-                </span>
-                <span>
-                  <strong className="block text-sm">{item.title}</strong>
-                  <span className="text-xs opacity-70">{item.caption}</span>
-                </span>
-              </div>
-            )
-          })}
-        </nav>
-      </aside>
+    // No overflow-x here — setting it computes overflow-y to `auto` too,
+    // which turns this div into its own scroll container and traps
+    // OnboardingSidebar's `sticky` inside it instead of the viewport. The
+    // inner <main> below already clips any horizontal overflow.
+    <div className="flex min-h-screen bg-[#F7F7FA]">
+      <OnboardingSidebar activeIndex={onboardingStageIndex(session.current_step)} />
 
-      <main className="min-w-0 flex-1 p-4 sm:p-8">
-        <div className="mx-auto max-w-4xl">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex h-16 shrink-0 items-center gap-4 border-b border-[#ECECF2] bg-[#F7F7FA] px-5 sm:px-8">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm">
+            <span className="text-[#9A9AAB]">Onboarding</span>
+            <span className="text-[#C7C7D2]">/</span>
+            <span className="font-semibold text-[#26262F]">{STEP_LABELS[session.current_step]}</span>
+          </nav>
+        </header>
+        <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-8">
+          <div className="mx-auto max-w-4xl">
           {(session.current_step === 'OCEAN' ||
             session.current_step === 'RIASEC') && (
-            <AssessmentPanel
-              session={session}
-              type={session.current_step}
-              onAdvance={(step) =>
-                setSession((current) => ({ ...current, current_step: step }))
-              }
-            />
+            <>
+              <div className="mb-4 flex justify-end">
+                <CvBackgroundStatus
+                  onboardingSessionId={session.onboarding_session_id}
+                />
+              </div>
+              <AssessmentPanel
+                session={session}
+                type={session.current_step}
+                onAdvance={(step) =>
+                  setSession((current) => ({ ...current, current_step: step }))
+                }
+              />
+            </>
+          )}
+          {session.current_step === 'IDENTITY' && (
+            <IdentityHandoff session={session} />
           )}
           {DD_PHASES.includes(session.current_step as DoubleDiamondPhase) && (
             <DoubleDiamondPanel
@@ -123,8 +119,94 @@ export function CareerJourney({
             session.current_step === 'COMPLETE') && (
             <ResultPanel session={session} onSession={setSession} />
           )}
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}
+
+// RIASEC hands current_step to IDENTITY as soon as it's submitted, whether
+// or not the CV has finished parsing — this panel is what the job seeker
+// sees in that instant. It waits for the CV (retrying on failure) and then
+// bounces into the onboarding wizard, which owns the profile review UI.
+function IdentityHandoff({ session }: { session: OnboardingSessionResponse }) {
+  return (
+    <div className="space-y-4">
+      <JourneyHeader
+        eyebrow="Menyiapkan profil"
+        title="Menyelesaikan pembacaan CV"
+        description="OCEAN dan RIASEC-mu sudah tersimpan. Begitu SAKTI AI selesai membaca CV, kamu akan diarahkan ke tinjauan profil."
+        progress={100}
+      />
+      <CvProcessingGate
+        onboardingSessionId={session.onboarding_session_id}
+        // A full reload, not router.replace: we're already sitting on
+        // /job-seeker/onboarding (CareerJourney renders inline under that
+        // same URL), so a client-side "navigation" to the identical route is
+        // a no-op in the App Router — nothing remounts, the parent
+        // OnboardingWizard never re-runs its bootstrap, and the job seeker
+        // is stuck on this screen even after the CV finishes parsing. A hard
+        // reload forces OnboardingWizard to mount fresh and pick up the
+        // now-PARSED CV.
+        onReady={() => {
+          window.location.href = '/job-seeker/onboarding'
+        }}
+      />
+    </div>
+  )
+}
+
+// Passive indicator shown while filling OCEAN/RIASEC so it's visible that the
+// CV really is being parsed concurrently, not just stuck. Never blocks
+// anything — a failed fetch here just leaves it hidden.
+function CvBackgroundStatus({
+  onboardingSessionId,
+}: {
+  onboardingSessionId: string
+}) {
+  const [status, setStatus] = useState<'idle' | 'processing' | 'failed'>('idle')
+
+  useEffect(() => {
+    let active = true
+    let timer: number | undefined
+
+    const poll = async () => {
+      try {
+        const response = await seekerApi.getParsedCv(onboardingSessionId)
+        if (!active) return
+        const data = response.data.data
+        if (data.status === 'PARSING') {
+          setStatus('processing')
+          timer = window.setTimeout(() => void poll(), 4000)
+        } else if (data.status === 'FAILED') {
+          setStatus('failed')
+        } else {
+          setStatus('idle')
+        }
+      } catch {
+        // Silent — this is a passive background indicator, not the primary flow.
+      }
+    }
+
+    void poll()
+    return () => {
+      active = false
+      if (timer) window.clearTimeout(timer)
+    }
+  }, [onboardingSessionId])
+
+  if (status === 'idle') return null
+  return (
+    <div
+      className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${status === 'failed' ? 'bg-red-50 text-red-700' : 'bg-[#EFEEFF] text-[#4138D8]'}`}
+    >
+      {status === 'failed' ? (
+        <AlertCircle className="size-3.5" />
+      ) : (
+        <Loader2 className="size-3.5 animate-spin" />
+      )}
+      {status === 'failed' ? 'CV gagal diproses' : 'CV sedang diproses di latar belakang'}
     </div>
   )
 }
@@ -251,7 +333,7 @@ function AssessmentPanel({
               size="sm"
               variant="outline"
               onClick={autofill}
-              className="gap-1.5"
+              className="gap-1.5 border-[#E4E3F0] text-[#6E6E86] hover:border-[#CFC8FF] hover:bg-[#F4F3FB] hover:text-[#4138D8]"
             >
               <Dices className="size-3.5" />
               Isi otomatis
@@ -261,9 +343,9 @@ function AssessmentPanel({
         }
       />
       {data.questions.map((question) => (
-        <Card key={question.question_id} size="sm">
+        <Card key={question.question_id} size="sm" className="border-[#ECECF2]">
           <CardHeader>
-            <CardTitle className="text-lg leading-7">
+            <CardTitle className="text-lg leading-7 text-[#20202A]">
               {question.question_text}
             </CardTitle>
           </CardHeader>
@@ -286,7 +368,7 @@ function AssessmentPanel({
         </Card>
       ))}
       <StickyAction>
-        <span className="text-sm text-muted-foreground">
+        <span className="text-sm text-[#6C6C7A]">
           {complete
             ? 'Semua jawaban lengkap.'
             : `${data.questions.length - Object.keys(answers).length} pertanyaan belum dijawab.`}
@@ -295,6 +377,7 @@ function AssessmentPanel({
           size="lg"
           disabled={!complete || submitting}
           onClick={() => void submit()}
+          className="bg-[#4138D8] text-white hover:bg-[#3315B8]"
         >
           {submitting ? <Loader2 className="animate-spin" /> : <ArrowRight />}
           {submitting ? 'Menghitung...' : `Selesaikan ${type}`}
@@ -427,16 +510,16 @@ function DoubleDiamondPanel({
         status={<SaveIndicator status={saveStatus} />}
       />
       {data.questions.map((question, index) => (
-        <Card key={question.question_id}>
+        <Card key={question.question_id} className="border-[#ECECF2]">
           <CardHeader>
-            <CardDescription>
+            <CardDescription className="text-[#9293A2]">
               {question.question_code} · Pertanyaan {index + 1}
             </CardDescription>
-            <CardTitle className="text-lg leading-7">
+            <CardTitle className="text-lg leading-7 text-[#20202A]">
               {question.question_text}
             </CardTitle>
             {question.helper_text && (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-[#6C6C7A]">
                 {question.helper_text}
               </p>
             )}
@@ -458,7 +541,7 @@ function DoubleDiamondPanel({
         </Card>
       ))}
       <StickyAction>
-        <span className="text-sm text-muted-foreground">
+        <span className="text-sm text-[#6C6C7A]">
           {complete
             ? 'Semua jawaban wajib lengkap.'
             : 'Lengkapi pertanyaan wajib untuk melanjutkan.'}
@@ -467,6 +550,7 @@ function DoubleDiamondPanel({
           size="lg"
           disabled={!complete || submitting}
           onClick={() => void submit()}
+          className="bg-[#4138D8] text-white hover:bg-[#3315B8]"
         >
           {submitting ? <Loader2 className="animate-spin" /> : <Sparkles />}
           {submitting ? 'Menganalisis...' : 'Analisis & lanjutkan'}
@@ -506,7 +590,7 @@ function DoubleDiamondQuestionInput({
         rows={5}
         value={typeof answer === 'string' ? answer : ''}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="w-full rounded-lg border border-[#E4E3F0] bg-white px-3 py-2 text-sm text-[#20202A] outline-none focus-visible:border-[#4138D8] focus-visible:ring-3 focus-visible:ring-[#4138D8]/15"
         placeholder="Tulis jawabanmu..."
       />
     )
@@ -523,11 +607,11 @@ function DoubleDiamondQuestionInput({
           step="1"
           value={typeof answer === 'number' ? answer : min}
           onChange={(event) => onChange(Number(event.target.value))}
-          className="w-full accent-primary"
+          className="w-full accent-[#4138D8]"
         />
-        <div className="flex justify-between text-sm text-muted-foreground">
+        <div className="flex justify-between text-sm text-[#9293A2]">
           <span>{min}</span>
-          <strong className="text-primary">
+          <strong className="text-[#4138D8]">
             {typeof answer === 'number' ? answer : 'Pilih nilai'}
           </strong>
           <span>{max}</span>
@@ -543,10 +627,10 @@ function DoubleDiamondQuestionInput({
             type="button"
             key={option.code}
             onClick={() => onChange(option.code)}
-            className={`flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition ${answer === option.code ? 'border-primary bg-primary/5 ring-2 ring-primary/10' : 'border-border hover:bg-muted/50'}`}
+            className={`flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition ${answer === option.code ? 'border-[#4138D8] bg-[#4138D8]/5 ring-2 ring-[#4138D8]/10' : 'border-[#E4E3F0] hover:bg-[#F4F3FB]'}`}
           >
             <span
-              className={`size-4 rounded-full border ${answer === option.code ? 'border-[5px] border-primary' : 'border-input'}`}
+              className={`size-4 rounded-full border ${answer === option.code ? 'border-[5px] border-[#4138D8]' : 'border-[#D8D5ED]'}`}
             />
             {option.label}
           </button>
@@ -572,10 +656,10 @@ function DoubleDiamondQuestionInput({
                   : [...selected, option.code],
               )
             }
-            className={`flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition ${active ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}
+            className={`flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition ${active ? 'border-[#4138D8] bg-[#4138D8]/5' : 'border-[#E4E3F0] hover:bg-[#F4F3FB]'}`}
           >
             <span
-              className={`flex size-5 items-center justify-center rounded ${active ? 'bg-primary text-xs font-bold text-white' : 'border border-input'}`}
+              className={`flex size-5 items-center justify-center rounded ${active ? 'bg-[#4138D8] text-xs font-bold text-white' : 'border border-[#D8D5ED]'}`}
             >
               {active ? (
                 question.response_type === 'RANKING' ? (
@@ -656,18 +740,18 @@ function ResultPanel({
         description="Ringkasan ini menggabungkan kecenderungan OCEAN, minat RIASEC, profil, dan jawaban Double Diamond."
         progress={100}
       />
-      <Card>
+      <Card className="border-[#ECECF2]">
         <CardHeader>
-          <CardTitle>
+          <CardTitle className="text-[#20202A]">
             {resolveSelectedRole(result) || 'Arah karier terpilih'}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-[#6C6C7A]">
             RIASEC dominan: {assessment.riasec.dominant_code} · confidence{' '}
             {Math.round(result.confidence_score * 100)}%
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="leading-7 text-foreground">
+          <p className="leading-7 text-[#3B3B4C]">
             {result.career_summary || assessment.career_profile_summary}
           </p>
           {result.work_style_summary && (
@@ -686,20 +770,20 @@ function ResultPanel({
         />
       </div>
       {result.recommended_roles?.length ? (
-        <Card>
+        <Card className="border-[#ECECF2]">
           <CardHeader>
-            <CardTitle>Role yang direkomendasikan</CardTitle>
+            <CardTitle className="text-[#20202A]">Role yang direkomendasikan</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
             {result.recommended_roles.map((role) => (
-              <div key={role.code} className="rounded-lg border p-4">
+              <div key={role.code} className="rounded-lg border border-[#ECECF2] p-4">
                 <div className="flex justify-between gap-3">
-                  <strong>{role.label}</strong>
-                  <span className="text-sm font-semibold text-primary">
+                  <strong className="text-[#20202A]">{role.label}</strong>
+                  <span className="text-sm font-semibold text-[#4138D8]">
                     {Math.round(role.score * 100)}%
                   </span>
                 </div>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                <p className="mt-2 text-sm leading-6 text-[#6C6C7A]">
                   {role.reason}
                 </p>
               </div>
@@ -708,10 +792,10 @@ function ResultPanel({
         </Card>
       ) : null}
       <StickyAction>
-        <span className="text-sm text-muted-foreground">
+        <span className="text-sm text-[#6C6C7A]">
           Hasil ini adalah alat eksplorasi, bukan diagnosis psikologis.
         </span>
-        <Button size="lg" onClick={() => void finish()} disabled={finishing}>
+        <Button size="lg" onClick={() => void finish()} disabled={finishing} className="bg-[#4138D8] text-white hover:bg-[#3315B8]">
           {finishing ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}
           {session.current_step === 'COMPLETE'
             ? 'Ke dashboard'
@@ -736,26 +820,26 @@ function JourneyHeader({
   status?: ReactNode
 }) {
   return (
-    <header className="rounded-xl border border-border bg-card p-5 sm:p-6">
+    <header className="rounded-xl border border-[#ECECF2] bg-white p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-primary">
+          <p className="text-xs font-bold tracking-wider text-[#4138D8] uppercase">
             {eyebrow}
           </p>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight">{title}</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+          <h1 className="mt-2 font-heading text-2xl font-bold tracking-tight text-[#20202A]">{title}</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[#6C6C7A]">
             {description}
           </p>
         </div>
         {status}
       </div>
-      <div className="mt-5 h-2 overflow-hidden rounded-full bg-muted">
+      <div className="mt-5 h-2 overflow-hidden rounded-full bg-[#EEEEF3]">
         <div
-          className="h-full rounded-full bg-primary transition-all"
+          className="h-full rounded-full bg-[#4138D8] transition-all"
           style={{ width: `${progress}%` }}
         />
       </div>
-      <p className="mt-2 text-right text-xs font-semibold text-muted-foreground">
+      <p className="mt-2 text-right text-xs font-semibold text-[#9A9AAB]">
         {progress}% lengkap
       </p>
     </header>
@@ -792,13 +876,13 @@ function SaveIndicator({
 
 function LoadingCard({ label }: { label: string }) {
   return (
-    <Card>
+    <Card className="border-[#ECECF2]">
       <CardContent className="flex min-h-72 flex-col items-center justify-center gap-4 text-center">
-        <span className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <span className="flex size-14 items-center justify-center rounded-full bg-[#EFEEFF] text-[#4138D8]">
           <Loader2 className="size-7 animate-spin" />
         </span>
-        <p className="font-semibold">{label}</p>
-        <p className="text-sm text-muted-foreground">
+        <p className="font-semibold text-[#20202A]">{label}</p>
+        <p className="text-sm text-[#6C6C7A]">
           Proses AI dapat membutuhkan beberapa saat.
         </p>
       </CardContent>
@@ -807,10 +891,10 @@ function LoadingCard({ label }: { label: string }) {
 }
 function RetryCard({ onRetry }: { onRetry: () => void }) {
   return (
-    <Card>
+    <Card className="border-[#ECECF2]">
       <CardContent className="flex min-h-64 flex-col items-center justify-center gap-4 text-center">
-        <p className="font-semibold">Data belum berhasil dimuat.</p>
-        <Button onClick={onRetry}>
+        <p className="font-semibold text-[#20202A]">Data belum berhasil dimuat.</p>
+        <Button onClick={onRetry} className="bg-[#4138D8] text-white hover:bg-[#3315B8]">
           <RefreshCw />
           Coba lagi
         </Button>
@@ -820,37 +904,37 @@ function RetryCard({ onRetry }: { onRetry: () => void }) {
 }
 function StickyAction({ children }: { children: ReactNode }) {
   return (
-    <div className="sticky bottom-4 z-20 flex flex-col items-stretch justify-between gap-3 rounded-xl bg-card/95 p-3 shadow-sm ring-1 ring-foreground/10 backdrop-blur sm:flex-row sm:items-center">
+    <div className="sticky bottom-4 z-20 flex flex-col items-stretch justify-between gap-3 rounded-xl bg-white/95 p-3 shadow-sm ring-1 ring-[#ECECF2] backdrop-blur sm:flex-row sm:items-center">
       {children}
     </div>
   )
 }
 function SummaryBlock({ title, text }: { title: string; text: string }) {
   return (
-    <div className="rounded-lg bg-muted/50 p-4">
-      <strong className="text-sm">{title}</strong>
-      <p className="mt-1 text-sm leading-6 text-muted-foreground">{text}</p>
+    <div className="rounded-lg bg-[#FAFAFC] p-4">
+      <strong className="text-sm text-[#20202A]">{title}</strong>
+      <p className="mt-1 text-sm leading-6 text-[#6C6C7A]">{text}</p>
     </div>
   )
 }
 function ListCard({ title, values }: { title: string; values: string[] }) {
   return (
-    <Card>
+    <Card className="border-[#ECECF2]">
       <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardTitle className="text-lg text-[#20202A]">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         {values.length ? (
           <ul className="space-y-2">
             {values.map((value) => (
-              <li key={value} className="flex gap-2 text-sm">
+              <li key={value} className="flex gap-2 text-sm text-[#3B3B4C]">
                 <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" />
                 {value}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">Belum ada catatan.</p>
+          <p className="text-sm text-[#6C6C7A]">Belum ada catatan.</p>
         )}
       </CardContent>
     </Card>
@@ -934,11 +1018,4 @@ function phaseDescription(phase: DoubleDiamondPhase): string {
     CONVERGE_2:
       'Perjelas role konkret, kesiapan, kekuatan, dan hambatan yang perlu disiapkan.',
   }[phase]
-}
-function journeyIndex(step: OnboardingCurrentStep): number {
-  if (step === 'OCEAN' || step === 'RIASEC') return 1
-  if (DD_PHASES.includes(step as DoubleDiamondPhase)) return 2
-  if (step === 'PREFERENCE') return 3
-  if (step === 'COMPLETE') return 3
-  return 0
 }

@@ -28,15 +28,15 @@ export function LikertScale({ value, onChange, minLabel, maxLabel, points = 7 }:
             className={cn(
               'rounded-full text-sm font-medium',
               value === point
-                ? 'border-primary'
-                : 'hover:bg-muted',
+                ? 'border-[#4138D8] bg-[#4138D8] text-white hover:bg-[#3315B8]'
+                : 'border-[#E4E3F0] text-[#6E6E86] hover:border-[#CFC8FF] hover:bg-[#F4F3FB] hover:text-[#4138D8]',
             )}
           >
             {point}
           </Button>
         ))}
       </div>
-      <div className="flex justify-between text-xs text-muted-foreground">
+      <div className="flex justify-between text-xs text-[#9A9AAB]">
         <span>{minLabel}</span>
         <span>{maxLabel}</span>
       </div>

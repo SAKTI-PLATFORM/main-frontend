@@ -10,11 +10,12 @@ import type { OnboardingSessionResponse } from '@/types/career-onboarding.types'
 import { handleApiError } from '@/utils/api-error';
 import { Toast } from '@/utils/toast';
 import { AlertCircle, Check, CheckCircle2, Loader2, Sparkles, UploadCloud, X } from 'lucide-react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ChangeEvent, DragEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { RepeatableProfileForms } from './repeatable-profile-forms';
 import { CareerJourney } from './career-journey';
+import { CvProcessingGate } from './cv-processing-gate';
+import { OnboardingSidebar } from './onboarding-sidebar';
 
 type UploadPhase = 'idle' | 'uploading' | 'success' | 'error';
 
@@ -63,13 +64,6 @@ const wizardSteps = [
   },
 ] as const;
 
-const onboardingJourney = [
-  { title: 'Profil', caption: 'CV & identitas' },
-  { title: 'Psikometri', caption: 'OCEAN & RIASEC' },
-  { title: 'Eksplorasi Karier', caption: 'Double Diamond' },
-  { title: 'Selesai', caption: 'Preferensi & siap matching' },
-] as const;
-
 export function OnboardingWizard() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -82,9 +76,20 @@ export function OnboardingWizard() {
   const [errorMessage, setErrorMessage] = useState('');
   const [journeySession, setJourneySession] = useState<OnboardingSessionResponse | null>(null);
   const [bootstrapping, setBootstrapping] = useState(true);
+  // True when current_step is already IDENTITY but the CV hasn't finished
+  // background parsing yet (e.g. the job seeker breezed through OCEAN/RIASEC
+  // faster than SAKTI-AI could read the PDF, or reopened the tab mid-parse).
+  const [awaitingCv, setAwaitingCv] = useState(false);
 
   const step = wizardSteps[currentStep];
   const isUploading = phase === 'uploading';
+
+  function applyParsedCv(result: ParseCvResponse, session: OnboardingSessionResponse) {
+    setParseResult(result);
+    setPhase('success');
+    setCurrentStep(Math.max(1, Math.min(session.profile_step, 7)));
+    setAwaitingCv(false);
+  }
 
   useEffect(() => {
     let active = true;
@@ -108,9 +113,11 @@ export function OnboardingWizard() {
             session.onboarding_session_id,
           );
           if (!active) return;
-          setParseResult(parsedResponse.data.data);
-          setPhase('success');
-          setCurrentStep(Math.max(1, Math.min(session.profile_step, 7)));
+          if (parsedResponse.data.data.status === 'PARSED') {
+            applyParsedCv(parsedResponse.data.data, session);
+          } else {
+            setAwaitingCv(true);
+          }
         }
       } catch (error) {
         if (active) handleApiError(error);
@@ -139,10 +146,14 @@ export function OnboardingWizard() {
     setPhase('uploading');
 
     try {
-      const response = await seekerApi.parseCv(file);
+      // Returns immediately with status PARSING — the CV keeps being read by
+      // SAKTI-AI in the background. current_step already moves to OCEAN on
+      // the backend, so the session refresh below swaps this wizard straight
+      // into the OCEAN/RIASEC flow instead of waiting on the parse here.
+      await seekerApi.parseCv(file);
       const sessionResponse = await seekerApi.getCurrentOnboarding();
       if (!sessionResponse.data.data) {
-        throw new Error('Sesi onboarding tidak ditemukan setelah parsing CV.');
+        throw new Error('Sesi onboarding tidak ditemukan setelah upload CV.');
       }
       setJourneySession(sessionResponse.data.data);
       try {
@@ -151,10 +162,8 @@ export function OnboardingWizard() {
       } catch {
         // Parsing remains usable when profile refresh is temporarily unavailable.
       }
-      setParseResult(response.data.data);
-      setCurrentStep(1);
       setPhase('success');
-      Toast.success('PDF berhasil dibaca. Tinjau data yang terdeteksi.');
+      Toast.success('CV sedang diproses di latar belakang. Lanjut isi OCEAN & RIASEC sambil menunggu.');
     } catch (error) {
       const parsed = handleApiError(error);
       setErrorMessage(parsed.message);
@@ -239,40 +248,41 @@ export function OnboardingWizard() {
     return <CareerJourney initialSession={journeySession} />;
   }
 
-  return (
-    <div className="flex min-h-screen overflow-x-hidden bg-muted/30">
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-card px-3 py-5 md:flex">
-        <div className="flex items-center px-2 pb-6">
-          <Image src="/logo.png" alt="SAKTI AI" width={160} height={80} className="h-16 w-auto" priority />
+  if (awaitingCv && journeySession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F7F7FA] p-6">
+        <div className="w-full max-w-sm">
+          <CvProcessingGate
+            onboardingSessionId={journeySession.onboarding_session_id}
+            onReady={(result) => applyParsedCv(result, journeySession)}
+          />
         </div>
+      </div>
+    );
+  }
 
-        <nav aria-label="Tahapan onboarding" className="flex flex-col gap-1">
-          {onboardingJourney.map((item, index) => {
-            const active = index === 0;
-            return (
-              <div key={item.title} className={`grid min-h-14 w-full grid-cols-[24px_1fr] items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${active ? 'bg-primary/10 text-primary' : 'text-muted-foreground'}`}>
-                <span className={`flex size-6 items-center justify-center rounded-full text-[11px] font-semibold ${active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>{index + 1}</span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-medium">{item.title}</span>
-                  <span className={`mt-0.5 block text-xs leading-4 ${active ? 'text-primary/65' : 'text-muted-foreground/70'}`}>{item.caption}</span>
-                </span>
-              </div>
-            );
-          })}
-        </nav>
-      </aside>
+  return (
+    // No overflow-x here — setting it computes overflow-y to `auto` too,
+    // which turns this div into its own scroll container and traps
+    // OnboardingSidebar's `sticky` inside it instead of the viewport. The
+    // inner <main> below already clips any horizontal overflow.
+    <div className="flex min-h-screen bg-[#F7F7FA]">
+      <OnboardingSidebar activeIndex={0} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-4 border-b border-border bg-card px-6 py-3">
-
-          <div className="size-8 rounded-full" />
+        <header className="flex h-16 shrink-0 items-center gap-4 border-b border-[#ECECF2] bg-[#F7F7FA] px-5 sm:px-8">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm">
+            <span className="text-[#9A9AAB]">Onboarding</span>
+            <span className="text-[#C7C7D2]">/</span>
+            <span className="font-semibold text-[#26262F]">{step.label}</span>
+          </nav>
         </header>
         <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6">
           <div className="mx-auto w-[calc(100vw-2rem)] min-w-0 max-w-6xl sm:w-[calc(100vw-3rem)] md:w-full">
             <header className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">{step.title}</h1>
-                <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">{step.description}</p>
+                <h1 className="font-heading text-[26px] leading-[34px] font-bold tracking-tight text-[#20202A]">{step.title}</h1>
+                <p className="mt-1 max-w-3xl text-sm leading-6 text-[#6C6C7A]">{step.description}</p>
               </div>
             </header>
 
@@ -280,13 +290,13 @@ export function OnboardingWizard() {
               <div className="grid min-w-[860px] grid-cols-8">
                 {wizardSteps.map((item, index) => (
                   <button key={item.label} type="button" onClick={() => navigateToStep(index)} className="group relative flex flex-col items-center gap-2 text-center">
-                    <span className="absolute left-0 right-0 top-5 h-px bg-border group-first:left-1/2 group-last:right-1/2" />
+                    <span className="absolute left-0 right-0 top-5 h-px bg-[#E4E4EC] group-first:left-1/2 group-last:right-1/2" />
                     <span
-                      className={`relative z-10 flex size-10 items-center justify-center rounded-full text-sm font-bold ${index === currentStep ? 'bg-primary text-primary-foreground ring-4 ring-primary/10' : parseResult && index < currentStep ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground'}`}
+                      className={`relative z-10 flex size-10 items-center justify-center rounded-full text-sm font-bold ${index === currentStep ? 'bg-[#4138D8] text-white ring-4 ring-[#4138D8]/10' : parseResult && index < currentStep ? 'bg-[#4138D8] text-white' : 'bg-[#EEEEF3] text-[#9A9AAB]'}`}
                     >
-                      {parseResult && index < currentStep ? <Check className="size-4" /> : index + 1}
+                      {parseResult && index < currentStep ? <Check className="size-4" strokeWidth={2.6} /> : index + 1}
                     </span>
-                    <span className={`text-xs ${index === currentStep ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>{item.label}</span>
+                    <span className={`text-xs ${index === currentStep ? 'font-semibold text-[#20202A]' : 'text-[#9293A2]'}`}>{item.label}</span>
                   </button>
                 ))}
               </div>
@@ -320,10 +330,10 @@ export function OnboardingWizard() {
 
 function OnboardingLoading() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-6">
-      <Card className="w-full max-w-sm">
-        <CardContent className="flex items-center justify-center gap-3 py-8 text-sm text-muted-foreground">
-          <Loader2 className="size-5 animate-spin text-primary" />
+    <div className="flex min-h-screen items-center justify-center bg-[#F7F7FA] p-6">
+      <Card className="w-full max-w-sm border-[#ECECF2]">
+        <CardContent className="flex items-center justify-center gap-3 py-8 text-sm text-[#6C6C7A]">
+          <Loader2 className="size-5 animate-spin text-[#4138D8]" />
           Memulihkan progress onboarding…
         </CardContent>
       </Card>
@@ -364,14 +374,15 @@ function UploadStep({
 
   return (
     <>
-      <Card>
+      <Card className="border-[#ECECF2]">
         <CardHeader className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
           <div>
-            <CardTitle>Unggah CV</CardTitle>
-            <CardDescription className="mt-1">Gunakan PDF berbasis teks dengan ukuran maksimal 10 MB.</CardDescription>
+            <CardTitle className="font-heading text-[18px] leading-[27px] font-bold text-[#20202A]">Unggah CV</CardTitle>
+            <CardDescription className="mt-1 text-[#6C6C7A]">Gunakan PDF berbasis teks dengan ukuran maksimal 10 MB.</CardDescription>
           </div>
-          <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-900">
-            <Sparkles className="size-4 text-blue-600" />
+          <div className="flex items-center gap-2 rounded-lg bg-[#EFEEFF] px-3 py-2 text-xs font-semibold text-[#4138D8]">
+            <Sparkles className="size-4" />
+            Dibaca oleh SAKTI AI
           </div>
         </CardHeader>
 
@@ -398,43 +409,43 @@ function UploadStep({
                 onDragActive(false);
               }}
               onDrop={onDrop}
-              className={`flex min-h-72 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center outline-none transition focus-visible:ring-4 focus-visible:ring-primary/15 ${dragActive ? 'border-primary bg-primary/5' : 'border-border bg-muted/30 hover:border-primary/60 hover:bg-primary/[0.03]'}`}
+              className={`flex min-h-72 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center outline-none transition focus-visible:ring-4 focus-visible:ring-[#4138D8]/15 ${dragActive ? 'border-[#4138D8] bg-[#4138D8]/5' : 'border-[#E4E3F0] bg-[#FAFAFC] hover:border-[#4138D8]/60 hover:bg-[#4138D8]/[0.03]'}`}
             >
-              <span className="flex size-16 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span className="flex size-16 items-center justify-center rounded-lg bg-[#EFEEFF] text-[#4138D8]">
                 <UploadCloud className="size-8" />
               </span>
-              <h3 className="mt-5 text-lg font-semibold text-foreground">Tarik dan lepas PDF di sini</h3>
-              <p className="mt-2 text-sm text-muted-foreground">Hanya PDF, maksimal 10 MB.</p>
-              <Button type="button" size="lg" className="pointer-events-none mt-5" tabIndex={-1}>
+              <h3 className="mt-5 text-lg font-semibold text-[#20202A]">Tarik dan lepas PDF di sini</h3>
+              <p className="mt-2 text-sm text-[#6C6C7A]">Hanya PDF, maksimal 10 MB.</p>
+              <Button type="button" size="lg" className="pointer-events-none mt-5 bg-[#4138D8] text-white" tabIndex={-1}>
                 Pilih PDF CV
               </Button>
             </div>
           ) : (
-            <div className="rounded-lg border border-border bg-muted/30 p-4 sm:p-5">
+            <div className="rounded-lg border border-[#ECECF2] bg-[#FAFAFC] p-4 sm:p-5">
               <div className="flex items-start gap-4">
                 <span className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-red-100 text-xs font-bold text-red-700">PDF</span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-foreground">{selectedFile.name}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
+                  <p className="truncate text-sm font-semibold text-[#20202A]">{selectedFile.name}</p>
+                  <p className="mt-1 text-xs text-[#9293A2]">{formatFileSize(selectedFile.size)}</p>
                   <div className="mt-3 flex items-center gap-2 text-sm">
-                    {uploading && <Loader2 className="size-4 animate-spin text-primary" />}
+                    {uploading && <Loader2 className="size-4 animate-spin text-[#4138D8]" />}
                     {phase === 'success' && <CheckCircle2 className="size-4 text-emerald-600" />}
                     {phase === 'error' && <AlertCircle className="size-4 text-red-600" />}
-                    <span className={phase === 'error' ? 'text-red-700' : phase === 'success' ? 'text-emerald-700' : 'text-muted-foreground'}>
+                    <span className={phase === 'error' ? 'text-red-700' : phase === 'success' ? 'text-emerald-700' : 'text-[#6C6C7A]'}>
                       {uploading ? 'Mengekstrak teks dan memetakan data...' : phase === 'success' ? 'CV berhasil diproses' : errorMessage}
                     </span>
                   </div>
                 </div>
                 {!uploading && (
-                  <Button type="button" variant="ghost" size="icon" onClick={onReset} title="Ganti PDF">
+                  <Button type="button" variant="ghost" size="icon" onClick={onReset} title="Ganti PDF" className="text-[#9293A2] hover:bg-[#F4F3FB] hover:text-[#4138D8]">
                     <X />
                     <span className="sr-only">Ganti PDF</span>
                   </Button>
                 )}
               </div>
               {uploading && (
-                <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full w-2/3 animate-pulse rounded-full bg-primary" />
+                <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#EEEEF3]">
+                  <div className="h-full w-2/3 animate-pulse rounded-full bg-[#4138D8]" />
                 </div>
               )}
             </div>
@@ -455,9 +466,9 @@ function UploadStep({
               </div>
               <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
                 {summaryCounts(parseResult).map(([label, value]) => (
-                  <div key={label} className="rounded-lg bg-card p-3 text-center ring-1 ring-foreground/5">
-                    <strong className="block text-xl text-foreground">{value}</strong>
-                    <span className="text-xs text-muted-foreground">{label}</span>
+                  <div key={label} className="rounded-lg bg-white p-3 text-center ring-1 ring-[#ECECF2]">
+                    <strong className="block text-xl text-[#20202A]">{value}</strong>
+                    <span className="text-xs text-[#6C6C7A]">{label}</span>
                   </div>
                 ))}
               </div>
@@ -467,8 +478,8 @@ function UploadStep({
       </Card>
 
       {parseResult && (
-        <div className="sticky bottom-4 mt-5 flex justify-end rounded-xl bg-card/95 p-3 shadow-sm ring-1 ring-foreground/10 backdrop-blur">
-          <Button type="button" size="lg" onClick={onContinue}>
+        <div className="sticky bottom-4 mt-5 flex justify-end rounded-xl bg-white/95 p-3 shadow-sm ring-1 ring-[#ECECF2] backdrop-blur">
+          <Button type="button" size="lg" onClick={onContinue} className="bg-[#4138D8] text-white hover:bg-[#3315B8]">
             Periksa data berikutnya <Check />
           </Button>
         </div>

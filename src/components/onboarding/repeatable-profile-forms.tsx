@@ -215,7 +215,7 @@ export function RepeatableProfileForms({
                 <Field label="Mulai"><Input className="h-10" type="date" value={entry.startDate ?? ''} onChange={(event) => setExperiences((items) => updateAt(items, index, { startDate: event.target.value }))} /></Field>
                 <Field label="Selesai"><Input className="h-10" type="date" value={entry.endDate ?? ''} disabled={entry.isCurrent} onChange={(event) => setExperiences((items) => updateAt(items, index, { endDate: event.target.value }))} /></Field>
                 <Field label="Status">
-                  <label className="flex h-10 items-center gap-2 text-sm text-foreground"><input type="checkbox" checked={entry.isCurrent ?? false} onChange={(event) => setExperiences((items) => updateAt(items, index, { isCurrent: event.target.checked, endDate: event.target.checked ? undefined : entry.endDate }))} />Masih berlangsung</label>
+                  <label className="flex h-10 items-center gap-2 text-sm text-[#3B3B4C]"><input type="checkbox" checked={entry.isCurrent ?? false} onChange={(event) => setExperiences((items) => updateAt(items, index, { isCurrent: event.target.checked, endDate: event.target.checked ? undefined : entry.endDate }))} />Masih berlangsung</label>
                 </Field>
                 <Field label="Durasi (bulan)"><Input className="h-10" type="number" min="0" value={entry.durationMonths ?? ''} onChange={(event) => setExperiences((items) => updateAt(items, index, { durationMonths: optionalNumber(event.target.value) }))} /></Field>
                 <Field label="Deskripsi dan pencapaian" wide><TextArea value={entry.description ?? ''} onChange={(value) => setExperiences((items) => updateAt(items, index, { description: value }))} placeholder="Jelaskan tanggung jawab dan dampak kerja" /></Field>
@@ -237,7 +237,7 @@ export function RepeatableProfileForms({
                 <Field label="Tahun mulai"><Input className="h-10" type="number" min="1900" max="2100" value={entry.startYear ?? ''} onChange={(event) => setEducations((items) => updateAt(items, index, { startYear: optionalNumber(event.target.value) }))} /></Field>
                 <Field label="Tahun selesai"><Input className="h-10" type="number" min="1900" max="2100" value={entry.endYear ?? ''} disabled={entry.isCurrent} onChange={(event) => setEducations((items) => updateAt(items, index, { endYear: optionalNumber(event.target.value) }))} /></Field>
                 <Field label="IPK"><Input className="h-10" type="number" min="0" max="4" step="0.01" value={entry.gpa ?? ''} onChange={(event) => setEducations((items) => updateAt(items, index, { gpa: optionalNumber(event.target.value) }))} /></Field>
-                <Field label="Status"><label className="flex h-10 items-center gap-2 text-sm text-foreground"><input type="checkbox" checked={entry.isCurrent ?? false} onChange={(event) => setEducations((items) => updateAt(items, index, { isCurrent: event.target.checked, endYear: event.target.checked ? undefined : entry.endYear }))} />Masih menempuh pendidikan</label></Field>
+                <Field label="Status"><label className="flex h-10 items-center gap-2 text-sm text-[#3B3B4C]"><input type="checkbox" checked={entry.isCurrent ?? false} onChange={(event) => setEducations((items) => updateAt(items, index, { isCurrent: event.target.checked, endYear: event.target.checked ? undefined : entry.endYear }))} />Masih menempuh pendidikan</label></Field>
               </RecordEntry>
             ))}
           </RecordSection>
@@ -264,30 +264,30 @@ export function RepeatableProfileForms({
           <div>
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-foreground">Skill</h3>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{skills.length}</span>
+                <h3 className="font-semibold text-[#20202A]">Skill</h3>
+                <span className="rounded-full bg-[#EEEEF3] px-2 py-0.5 text-xs font-semibold text-[#9A9AAB]">{skills.length}</span>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={() => setSkills((items) => [...items, newSkill()])}>
+              <Button type="button" variant="outline" size="sm" onClick={() => setSkills((items) => [...items, newSkill()])} className="border-[#E4E3F0] text-[#6E6E86] hover:border-[#CFC8FF] hover:bg-[#F4F3FB] hover:text-[#4138D8]">
                 <Plus className="size-4" />Tambah skill
               </Button>
             </div>
 
             <div className="space-y-2">
               {skills.map((entry, index) => (
-                <article key={index} className="relative grid grid-cols-2 gap-2 rounded-lg border border-border bg-card p-3 pr-12 sm:grid-cols-[minmax(180px,2fr)_minmax(120px,1fr)_minmax(120px,1fr)_36px] sm:items-end sm:gap-3 sm:pr-3">
+                <article key={index} className="relative grid grid-cols-2 gap-2 rounded-lg border border-[#ECECF2] bg-white p-3 pr-12 sm:grid-cols-[minmax(180px,2fr)_minmax(120px,1fr)_minmax(120px,1fr)_36px] sm:items-end sm:gap-3 sm:pr-3">
                   <label className="col-span-2 grid min-w-0 gap-1 sm:col-span-1">
-                    <span className="text-[11px] font-semibold text-foreground/70">Nama skill</span>
+                    <span className="text-[11px] font-semibold text-[#6C6C7A]">Nama skill</span>
                     <Input className="h-9" value={entry.detectedText} required onChange={(event) => setSkills((items) => updateAt(items, index, { detectedText: event.target.value }))} placeholder="Contoh: SQL" />
                   </label>
                   <label className="grid min-w-0 gap-1">
-                    <span className="text-[11px] font-semibold text-foreground/70">Learning hours</span>
+                    <span className="text-[11px] font-semibold text-[#6C6C7A]">Learning hours</span>
                     <Input className="h-9" type="number" min="0" step="0.5" value={entry.learningHours ?? ''} onChange={(event) => setSkills((items) => updateAt(items, index, { learningHours: optionalNumber(event.target.value) }))} placeholder="120 jam" />
                   </label>
                   <label className="grid min-w-0 gap-1">
-                    <span className="text-[11px] font-semibold text-foreground/70">Working hours</span>
+                    <span className="text-[11px] font-semibold text-[#6C6C7A]">Working hours</span>
                     <Input className="h-9" type="number" min="0" step="0.5" value={entry.workingHours ?? ''} onChange={(event) => setSkills((items) => updateAt(items, index, { workingHours: optionalNumber(event.target.value) }))} placeholder="960 jam" />
                   </label>
-                  <Button type="button" variant="ghost" size="icon-sm" className="absolute right-2 top-2 text-red-600 hover:text-red-700 sm:static" onClick={() => setSkills((items) => items.filter((_, itemIndex) => itemIndex !== index))} title={`Hapus ${entry.detectedText || `skill ${index + 1}`}`}>
+                  <Button type="button" variant="ghost" size="icon-sm" className="absolute right-2 top-2 text-red-600 hover:bg-red-50 hover:text-red-700 sm:static" onClick={() => setSkills((items) => items.filter((_, itemIndex) => itemIndex !== index))} title={`Hapus ${entry.detectedText || `skill ${index + 1}`}`}>
                     <Trash2 className="size-4" />
                     <span className="sr-only">Hapus {entry.detectedText || `skill ${index + 1}`}</span>
                   </Button>
@@ -350,12 +350,12 @@ export function RepeatableProfileForms({
         </StepPanel>
       )}
 
-      <footer className="sticky bottom-4 z-20 mt-5 flex items-center justify-between gap-3 rounded-xl bg-card/95 p-3 shadow-sm ring-1 ring-foreground/10 backdrop-blur">
-        <Button type="button" variant="outline" size="lg" onClick={onBack} disabled={saving}><ArrowLeft />Kembali</Button>
+      <footer className="sticky bottom-4 z-20 mt-5 flex items-center justify-between gap-3 rounded-xl bg-white/95 p-3 shadow-sm ring-1 ring-[#ECECF2] backdrop-blur">
+        <Button type="button" variant="outline" size="lg" onClick={onBack} disabled={saving} className="border-[#E4E3F0] text-[#6E6E86] hover:border-[#CFC8FF] hover:bg-[#F4F3FB] hover:text-[#4138D8]"><ArrowLeft />Kembali</Button>
         {activeStep < 7 ? (
-          <Button type="button" size="lg" onClick={continueToNext}>Lanjutkan<ArrowRight /></Button>
+          <Button type="button" size="lg" onClick={continueToNext} className="bg-[#4138D8] text-white hover:bg-[#3315B8]">Lanjutkan<ArrowRight /></Button>
         ) : (
-          <Button type="button" size="lg" onClick={() => void saveProfile()} disabled={saving}>{saving ? <Loader2 className="animate-spin" /> : <Save />}{saving ? 'Menyimpan...' : 'Simpan profil'}</Button>
+          <Button type="button" size="lg" onClick={() => void saveProfile()} disabled={saving} className="bg-[#4138D8] text-white hover:bg-[#3315B8]">{saving ? <Loader2 className="animate-spin" /> : <Save />}{saving ? 'Menyimpan...' : 'Simpan profil'}</Button>
         )}
       </footer>
     </>
@@ -364,9 +364,9 @@ export function RepeatableProfileForms({
 
 function StepPanel({ title, description, detectedCount, headerAccessory, children }: { title: string; description: string; detectedCount?: number; headerAccessory?: ReactNode; children: ReactNode }) {
   return (
-    <Card>
+    <Card className="border-[#ECECF2]">
       <CardHeader className="flex flex-wrap items-start justify-between gap-3 sm:flex-row">
-        <div><CardTitle>{title}</CardTitle><CardDescription className="mt-1 max-w-3xl leading-6">{description}</CardDescription></div>
+        <div><CardTitle className="font-heading text-[18px] leading-[27px] font-bold text-[#20202A]">{title}</CardTitle><CardDescription className="mt-1 max-w-3xl leading-6 text-[#6C6C7A]">{description}</CardDescription></div>
         {headerAccessory ?? (detectedCount !== undefined && <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-800">{detectedCount} terdeteksi dari CV</span>)}
       </CardHeader>
       <CardContent>{children}</CardContent>
@@ -377,9 +377,9 @@ function StepPanel({ title, description, detectedCount, headerAccessory, childre
 function RecordSection({ title, count, onAdd, children }: { title: string; count: number; onAdd: () => void; children: ReactNode }) {
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between gap-3"><div className="flex items-center gap-2"><h3 className="font-semibold text-foreground">{title}</h3><span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{count}</span></div></div>
+      <div className="mb-3 flex items-center justify-between gap-3"><div className="flex items-center gap-2"><h3 className="font-semibold text-[#20202A]">{title}</h3><span className="rounded-full bg-[#EEEEF3] px-2 py-0.5 text-xs font-semibold text-[#9A9AAB]">{count}</span></div></div>
       <div className="space-y-3">{children}</div>
-      <button type="button" onClick={onAdd} className="mt-3 flex min-h-14 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted/30 text-sm font-semibold text-primary transition hover:border-primary hover:bg-primary/5"><Plus className="size-4" />Tambah {title.toLowerCase()}</button>
+      <button type="button" onClick={onAdd} className="mt-3 flex min-h-14 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-[#D8D5ED] bg-[#FAFAFC] text-sm font-semibold text-[#4138D8] transition hover:border-[#4138D8] hover:bg-[#4138D8]/5"><Plus className="size-4" />Tambah {title.toLowerCase()}</button>
     </div>
   )
 }
@@ -387,19 +387,19 @@ function RecordSection({ title, count, onAdd, children }: { title: string; count
 function RecordEntry({ label, onRemove, children }: { label: string; onRemove: () => void; children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
   return (
-    <article className="overflow-hidden rounded-lg border border-border bg-card">
-      <header className="flex items-center justify-between gap-3 border-b border-border bg-muted/50 px-4 py-3"><p className="min-w-0 truncate text-sm font-semibold text-foreground">{label}</p><div className="flex items-center gap-1"><Button type="button" variant="ghost" size="icon" onClick={onRemove} title={`Hapus ${label}`}><Trash2 className="text-red-600" /><span className="sr-only">Hapus {label}</span></Button><Button type="button" variant="ghost" size="icon" onClick={() => setCollapsed((value) => !value)} title={collapsed ? 'Buka entri' : 'Tutup entri'}>{collapsed ? <ChevronDown /> : <ChevronUp />}<span className="sr-only">{collapsed ? 'Buka entri' : 'Tutup entri'}</span></Button></div></header>
+    <article className="overflow-hidden rounded-lg border border-[#ECECF2] bg-white">
+      <header className="flex items-center justify-between gap-3 border-b border-[#ECECF2] bg-[#FAFAFC] px-4 py-3"><p className="min-w-0 truncate text-sm font-semibold text-[#20202A]">{label}</p><div className="flex items-center gap-1"><Button type="button" variant="ghost" size="icon" onClick={onRemove} title={`Hapus ${label}`} className="hover:bg-red-50"><Trash2 className="text-red-600" /><span className="sr-only">Hapus {label}</span></Button><Button type="button" variant="ghost" size="icon" onClick={() => setCollapsed((value) => !value)} title={collapsed ? 'Buka entri' : 'Tutup entri'} className="text-[#9293A2] hover:bg-[#F4F3FB] hover:text-[#4138D8]">{collapsed ? <ChevronDown /> : <ChevronUp />}<span className="sr-only">{collapsed ? 'Buka entri' : 'Tutup entri'}</span></Button></div></header>
       {!collapsed && <div className="grid gap-4 p-4 sm:grid-cols-2">{children}</div>}
     </article>
   )
 }
 
 function Field({ label, wide, children }: { label: string; wide?: boolean; children: ReactNode }) {
-  return <label className={`grid min-w-0 gap-1.5 ${wide ? 'sm:col-span-2' : ''}`}><span className="text-xs font-semibold text-foreground/80">{label}</span>{children}</label>
+  return <label className={`grid min-w-0 gap-1.5 ${wide ? 'sm:col-span-2' : ''}`}><span className="text-xs font-semibold text-[#6C6C7A]">{label}</span>{children}</label>
 }
 
 function Select({ value, onChange, children }: { value: string; onChange: (value: string) => void; children: ReactNode }) {
-  return <select value={value} onChange={(event) => onChange(event.target.value)} className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50">{children}</select>
+  return <select value={value} onChange={(event) => onChange(event.target.value)} className="h-10 w-full rounded-lg border border-[#E4E3F0] bg-white px-3 text-sm text-[#20202A] outline-none focus-visible:border-[#4138D8] focus-visible:ring-3 focus-visible:ring-[#4138D8]/15">{children}</select>
 }
 
 function TextArea({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder?: string }) {
@@ -407,11 +407,11 @@ function TextArea({ value, onChange, placeholder }: { value: string; onChange: (
 }
 
 function ReviewSection({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="rounded-lg border border-border p-4"><h3 className="mb-3 text-sm font-semibold text-foreground">{title}</h3>{children}</section>
+  return <section className="rounded-lg border border-[#ECECF2] p-4"><h3 className="mb-3 text-sm font-semibold text-[#20202A]">{title}</h3>{children}</section>
 }
 
 function ReviewRow({ label, value }: { label: string; value: ReactNode }) {
-  return <div className="grid grid-cols-[112px_1fr] gap-3 border-t border-border py-2 text-sm first:border-t-0"><span className="text-muted-foreground">{label}</span><strong className="min-w-0 break-words font-semibold text-foreground">{value}</strong></div>
+  return <div className="grid grid-cols-[112px_1fr] gap-3 border-t border-[#ECECF2] py-2 text-sm first:border-t-0"><span className="text-[#6C6C7A]">{label}</span><strong className="min-w-0 break-words font-semibold text-[#20202A]">{value}</strong></div>
 }
 
 function updateAt<T>(items: T[], index: number, values: Partial<T>): T[] {
