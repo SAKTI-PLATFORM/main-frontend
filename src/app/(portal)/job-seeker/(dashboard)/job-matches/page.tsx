@@ -112,6 +112,26 @@ export default function JobMatchesPage() {
           />
         )}
 
+        {result && !busy && (
+          <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-[0_8px_30px_rgba(38,30,92,0.05)] ring-1 ring-[#E9E7F2] sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-bold text-[#302D37]">Hasil analisis terakhir</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Setelah memperbarui profil atau preferensi, jalankan ulang untuk mendapat rekomendasi terbaru.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void pipeline.generate(undefined, { force: true })}
+              disabled={pipeline.generating}
+              className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#D9D2FF] bg-[#F5F3FF] px-4 text-sm font-bold text-primary transition hover:bg-[#EDE9FF] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RotateCw className={cn('size-4', pipeline.generating && 'animate-spin')} />
+              Jalankan ulang analisis
+            </button>
+          </div>
+        )}
+
         {result && rankedMatches.length > 0 && selectedMatch && (
           <section className="grid items-start gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
               <div className="space-y-5 xl:sticky xl:top-5">

@@ -13,7 +13,9 @@ import { useCallback, useEffect, useState } from 'react'
 type PipelineKind = 'job-matcher' | 'talent-forger'
 type PipelineResult = JobMatcherResult | TalentForgerResult
 
-const POLL_INTERVAL_MS = 2_000
+// A pipeline run takes a few minutes; 3s keeps the UI responsive without
+// flooding the server log with status polls.
+const POLL_INTERVAL_MS = 3_000
 
 interface UseCareerPipelineOptions {
   /** talent-forger only: the career match whose saved roadmap we want. */
@@ -120,13 +122,13 @@ export function useCareerPipeline<T extends PipelineResult>(
   }, [inFlight, pipelineRunId, sessionId])
 
   const generate = useCallback(
-    async (targetMatchId?: string) => {
+    async (targetMatchId?: string, opts?: { force?: boolean }) => {
       if (!sessionId) return
       setGenerating(true)
       try {
         const response =
           kind === 'job-matcher'
-            ? await seekerApi.generateJobMatches(sessionId)
+            ? await seekerApi.generateJobMatches(sessionId, opts?.force)
             : await seekerApi.generateLearningPath(
                 sessionId,
                 targetMatchId ?? matchId,
