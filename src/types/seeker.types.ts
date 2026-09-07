@@ -119,14 +119,29 @@ export interface IdentityResponse {
   profileSummary: string | null
 }
 
+// CV parsing runs in the background after upload (async from OCEAN/RIASEC —
+// see career-onboarding onboarding-wizard/career-journey). `parseCv` and
+// `getParsedCv` both return this shape; only the 'PARSED' branch carries the
+// actual data, so narrow on `status` before reading the rest.
+export type CvParseStatus = 'PARSING' | 'PARSED' | 'FAILED'
+
+export interface ParseCvPending {
+  onboardingSessionId: string
+  cvId: string
+  status: 'PARSING' | 'FAILED'
+}
+
 export interface ParseCvResponse {
   onboardingSessionId: string
   cvId: string
+  status: 'PARSED'
   parsedId: string
   confidenceScore: number
   detected: ParseCvDetectedCounts
   parsedResult: ParsedCvResult
 }
+
+export type CvStatusResponse = ParseCvPending | ParseCvResponse
 
 export interface OnboardingRecordResponse {
   id: string

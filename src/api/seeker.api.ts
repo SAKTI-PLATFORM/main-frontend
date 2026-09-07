@@ -7,8 +7,8 @@ import type {
   CreateExperiencePayload,
   CreateProjectPayload,
   CreateSkillPayload,
+  CvStatusResponse,
   OnboardingRecordResponse,
-  ParseCvResponse,
   IdentityResponse,
   UpdateIdentityPayload,
 } from '@/types/seeker.types'
@@ -31,12 +31,15 @@ import type {
 const basePath = '/job-seeker/onboarding'
 
 export const seekerApi = {
+  // Returns immediately with status PARSING — the CV is parsed in the
+  // background so the job seeker can start OCEAN/RIASEC right away. Poll
+  // `getParsedCv` for the actual result.
   parseCv: (cv: File, versionNumber?: number) => {
     const body = new FormData()
     body.append('cv', cv)
     if (versionNumber) body.append('versionNumber', String(versionNumber))
 
-    return api.post<ApiResponse<ParseCvResponse>>(`${basePath}/cv/parse`, body)
+    return api.post<ApiResponse<CvStatusResponse>>(`${basePath}/cv/parse`, body)
   },
 
   updateIdentity: (body: UpdateIdentityPayload) =>
@@ -84,7 +87,7 @@ export const seekerApi = {
     ),
 
   getParsedCv: (sessionId: string) =>
-    api.get<ApiResponse<ParseCvResponse>>(
+    api.get<ApiResponse<CvStatusResponse>>(
       `${basePath}/${sessionId}/cv/parsed`,
     ),
 
@@ -161,9 +164,11 @@ export const seekerApi = {
       `${basePath}/${sessionId}/complete`,
     ),
 
-  generateJobMatches: (sessionId: string) =>
+  generateJobMatches: (sessionId: string, force = false) =>
     api.post<ApiResponse<PipelineRun<JobMatcherResult>>>(
       `${basePath}/${sessionId}/job-matches/generate`,
+      undefined,
+      force ? { params: { force: 'true' } } : undefined,
     ),
 
   getLatestJobMatches: (sessionId: string) =>
