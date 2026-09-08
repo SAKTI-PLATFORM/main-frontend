@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, LayoutGrid, Sparkles } from 'lucide-react'
+import { Bell, LayoutGrid, Sparkles, Briefcase, Binoculars } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useDashboardView } from './dashboard-view'
@@ -14,8 +14,9 @@ const SECTION_LABELS: Record<string, string> = {
 
 export function DashboardTopBar() {
   const pathname = usePathname()
-  const { view, setView } = useDashboardView()
+  const { view, setView, jobMatchesDetailName, setJobMatchesDetailId, setJobMatchesDetailName } = useDashboardView()
   const isHome = pathname === '/job-seeker'
+  const isJobMatches = pathname === '/job-seeker/job-matches'
   const section = SECTION_LABELS[pathname] ?? 'Dashboard'
 
   return (
@@ -23,7 +24,25 @@ export function DashboardTopBar() {
       <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm">
         <span className="text-[#9A9AAB]">Overview</span>
         <span className="text-[#C7C7D2]">/</span>
-        <span className="font-semibold text-[#26262F]">{section}</span>
+        
+        {isJobMatches && jobMatchesDetailName ? (
+          <>
+            <button 
+              type="button" 
+              onClick={() => {
+                setJobMatchesDetailId(undefined)
+                setJobMatchesDetailName(undefined)
+              }}
+              className="text-[#9A9AAB] hover:text-[#26262F] font-semibold transition"
+            >
+              {section}
+            </button>
+            <span className="text-[#C7C7D2]">/</span>
+            <span className="font-semibold text-[#26262F]">{jobMatchesDetailName}</span>
+          </>
+        ) : (
+          <span className="font-semibold text-[#26262F]">{section}</span>
+        )}
       </nav>
 
       <div className="flex items-center gap-3">
@@ -56,6 +75,25 @@ export function DashboardTopBar() {
             >
               <Sparkles className="size-4" />
               Psikometri
+            </button>
+          </div>
+        )}
+
+        {isJobMatches && (
+          <div className="flex items-center gap-1 rounded-lg bg-[#EFEEFF] p-1">
+            <button
+              type="button"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-colors bg-white text-[#FF6B00] shadow-sm"
+            >
+              <Briefcase className="size-4" />
+              Potensi Karir
+            </button>
+            <button
+              type="button"
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors text-[#6E6E86] hover:text-[#302D37]"
+            >
+              <Binoculars className="size-4" />
+              Cari Lowongan
             </button>
           </div>
         )}

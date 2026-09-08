@@ -7,6 +7,10 @@ export type DashboardView = 'summary' | 'psikometri'
 interface DashboardViewContextValue {
   view: DashboardView
   setView: (view: DashboardView) => void
+  jobMatchesDetailId?: string
+  setJobMatchesDetailId: (id?: string) => void
+  jobMatchesDetailName?: string
+  setJobMatchesDetailName: (name?: string) => void
 }
 
 const DashboardViewContext = createContext<DashboardViewContextValue | null>(null)
@@ -17,7 +21,14 @@ export function DashboardViewProvider({
   children: React.ReactNode
 }) {
   const [view, setView] = useState<DashboardView>('summary')
-  const value = useMemo(() => ({ view, setView }), [view])
+  const [jobMatchesDetailId, setJobMatchesDetailId] = useState<string | undefined>()
+  const [jobMatchesDetailName, setJobMatchesDetailName] = useState<string | undefined>()
+  
+  const value = useMemo(() => ({
+    view, setView,
+    jobMatchesDetailId, setJobMatchesDetailId,
+    jobMatchesDetailName, setJobMatchesDetailName
+  }), [view, jobMatchesDetailId, jobMatchesDetailName])
 
   return (
     <DashboardViewContext.Provider value={value}>
