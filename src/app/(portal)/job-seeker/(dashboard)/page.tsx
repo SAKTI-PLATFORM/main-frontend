@@ -33,6 +33,7 @@ import { DashboardError, DashboardLoading } from '@/components/dashboard/dashboa
 import { useDashboardView } from '@/components/dashboard/dashboard-view';
 import { useDashboard } from '@/features/dashboard/use-dashboard';
 import { cn } from '@/lib/utils';
+import { toSkillScore, skillScoreLabel } from '@/lib/skill-score';
 import type { AssessmentResultResponse, DoubleDiamondResultResponse, OnboardingSessionResponse } from '@/types/career-onboarding.types';
 import type { JobMatcherResult, PipelineRun, TalentForgerResult } from '@/types/career-pipeline.types';
 import type { DashboardResponse } from '@/types/seeker.types';
@@ -346,15 +347,15 @@ function SkillGapCard({ jobMatcher }: { jobMatcher: JobMatcherRun }) {
           <div className="relative mt-3">
             {/* Reference grid for the three proficiency tiers, drawn once behind every bar. */}
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[90px]">
-              {SKILL_LEVEL_LINES.map((line) => (
-                <div key={line.rank} className="absolute inset-x-0 border-t border-dashed border-[#E7E4F5]" style={{ bottom: `${(line.rank / 3) * 100}%` }} />
+              {SKILL_LEVEL_LINES.map((pct) => (
+                <div key={pct} className="absolute inset-x-0 border-t border-dashed border-[#E7E4F5]" style={{ bottom: `${pct}%` }} />
               ))}
             </div>
 
             <div className="flex items-end gap-1.5">
               {visibleGaps.map((gap, index) => {
-                const required = levelToPercent(gap.required_level);
-                const current = levelToPercent(gap.current_level);
+                const required = toSkillScore(gap.required_level);
+                const current = toSkillScore(gap.current_level);
                 const noGap = current >= required;
                 const darkFraction = required > 0 ? Math.min(current / required, 1) : 1;
                 const isFirst = index === 0;
@@ -371,10 +372,10 @@ function SkillGapCard({ jobMatcher }: { jobMatcher: JobMatcherRun }) {
                     >
                       <p className="text-[11px] font-semibold leading-4 text-white">{gap.skill_name}</p>
                       <p className="mt-1 text-[10.5px] leading-4 text-white/70">
-                        Levelmu <span className="font-semibold text-white">{levelLabel(gap.current_level)}</span>
+                        Levelmu <span className="font-semibold text-white">{skillScoreLabel(current)} · {current}</span>
                       </p>
                       <p className="text-[10.5px] leading-4 text-white/70">
-                        Dibutuhkan <span className="font-semibold text-white">{levelLabel(gap.required_level)}</span>
+                        Dibutuhkan <span className="font-semibold text-white">{skillScoreLabel(required)} · {required}</span>
                       </p>
                       <span
                         className={cn(
@@ -814,7 +815,7 @@ function CareerForecastsSection({ career, jobMatcher }: { career: DoubleDiamondR
         <p className="mt-3 rounded-lg bg-[#FAFAFC] p-4 text-center text-xs leading-5 text-[#8A8A98]">Rekomendasi role muncul setelah rangkaian onboarding sel esai.</p>
       )}
 
-      <Link href="/job-seeker/job-matches" className="mt-auto flex w-full items-center justify-center gap-2 rounded-lg bg-[#3E1DD1] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#3315B8]">
+      <Link href="/job-seeker/job-matches" className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[#3E1DD1] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#3315B8]">
         <BriefcaseBusiness className="size-4" />
         Lihat Selengkapnya
       </Link>
@@ -967,35 +968,9 @@ function normalizeConfidence(value: number): number {
   return Math.round((value <= 1 ? value * 100 : value) * 100) / 100;
 }
 
-// JobMatcher's skill-gap output only ever uses these four discrete
-// proficiency tiers (see SkillGapResult.current_level/required_level in the
-// AI service) — there's no underlying numeric score, so the "unit" here is a
-// competency tier, not a percentage. We map the tier straight to an even
-// 0/33/67/100 split so equal tiers render as visually equal bars and
-// different tiers are always visually distinct.
-const SKILL_LEVEL_RANK: Record<string, number> = {
-  none: 0,
-  beginner: 1,
-  intermediate: 2,
-  advanced: 3,
-};
-
-// Reference lines drawn behind the skill-gap bars, one per non-zero tier.
-const SKILL_LEVEL_LINES = [{ rank: 1 }, { rank: 2 }, { rank: 3 }] as const;
-
-function levelToPercent(level: string): number {
-  const rank = SKILL_LEVEL_RANK[level.trim().toLowerCase()];
-  return rank !== undefined ? (rank / 3) * 100 : 50;
-}
-
-function levelLabel(level: string): string {
-  const key = level.trim().toLowerCase();
-  if (key === 'advanced') return 'Mahir';
-  if (key === 'intermediate') return 'Menengah';
-  if (key === 'beginner') return 'Pemula';
-  if (key === 'none') return 'Belum ada';
-  return level;
-}
+// Skill-gap `current_level` / `required_level` are 0-100 proficiency scores
+// (see SkillGapResult in the AI service). Reference lines mark the quarter marks.
+const SKILL_LEVEL_LINES = [25, 50, 75] as const;
 
 function priorityRank(priority: string): number {
   return ({ high: 0, medium: 1, low: 2 } as Record<string, number>)[priority.trim().toLowerCase()] ?? 3;

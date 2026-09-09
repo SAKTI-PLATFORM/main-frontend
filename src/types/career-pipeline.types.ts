@@ -37,9 +37,12 @@ export interface CareerSkillGap {
   gap_id: string
   match_id: string
   skill_name: string
-  current_level: string
-  required_level: string
-  gap_level: string
+  /** 0-100 proficiency score of the user today. */
+  current_level: number
+  /** 0-100 proficiency score the role demands. */
+  required_level: number
+  /** max(0, required_level - current_level). */
+  gap_score: number
   priority: string
   reason: string
 }

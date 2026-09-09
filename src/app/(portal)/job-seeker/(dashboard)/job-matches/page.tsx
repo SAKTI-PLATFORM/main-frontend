@@ -8,14 +8,11 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  Clock,
   Paperclip,
   Play,
   PlayCircle,
   RotateCw,
   Send,
-  Signal,
-  Video,
   Waypoints,
   Zap,
 } from 'lucide-react'
@@ -33,6 +30,7 @@ import { useCareerPipeline } from '@/features/career-pipeline/use-career-pipelin
 import { useDashboard } from '@/features/dashboard/use-dashboard'
 import { useDashboardView } from '@/components/dashboard/dashboard-view'
 import { cn } from '@/lib/utils'
+import { toSkillScore, skillScoreLabel } from '@/lib/skill-score'
 import type {
   CareerCandidateRole,
   CareerMatchResult,
@@ -360,8 +358,8 @@ function DetailLeftColumn({ role, score, gaps, candidateRole }: { role: CareerMa
               {gaps.length > 0 ? (
                 <div className="flex items-end gap-1.5">
                   {gaps.slice(0, 6).map((gap, index) => {
-                    const required = levelToPercent(gap.required_level)
-                    const current = levelToPercent(gap.current_level)
+                    const required = toSkillScore(gap.required_level)
+                    const current = toSkillScore(gap.current_level)
                     const noGap = current >= required
                     const darkFraction = required > 0 ? Math.min(current / required, 1) : 1
                     const isFirst = index === 0
@@ -373,8 +371,8 @@ function DetailLeftColumn({ role, score, gaps, candidateRole }: { role: CareerMa
                           isFirst && 'left-0', isLast && 'right-0', !isFirst && !isLast && 'left-1/2 -translate-x-1/2'
                         )}>
                           <p className="text-[11px] font-semibold leading-4 text-white">{gap.skill_name}</p>
-                          <p className="mt-1 text-[10.5px] leading-4 text-white/70">Level kamu <span className="font-semibold text-white">{gap.current_level}</span></p>
-                          <p className="text-[10.5px] leading-4 text-white/70">Dibutuhkan <span className="font-semibold text-white">{gap.required_level}</span></p>
+                          <p className="mt-1 text-[10.5px] leading-4 text-white/70">Level kamu <span className="font-semibold text-white">{skillScoreLabel(current)} · {current}</span></p>
+                          <p className="text-[10.5px] leading-4 text-white/70">Dibutuhkan <span className="font-semibold text-white">{skillScoreLabel(required)} · {required}</span></p>
                           <span className={cn('absolute top-full -mt-px size-1.5 rotate-45 bg-[#20202A]', isFirst && 'left-6', isLast && 'right-6', !isFirst && !isLast && 'left-1/2 -translate-x-1/2')} />
                         </div>
                         <div className="flex h-[90px] w-full items-end justify-center">
@@ -426,13 +424,6 @@ function DetailLeftColumn({ role, score, gaps, candidateRole }: { role: CareerMa
   )
 }
 
-function levelToPercent(level: string): number {
-  const map: Record<string, number> = {
-    none: 0, beginner: 33, intermediate: 66, advanced: 80, expert: 100,
-    'tidak ada': 0, 'pemula': 33, 'menengah': 66, 'mahir': 80, 'ahli': 100,
-  }
-  return map[level?.toLowerCase()] ?? 50
-}
 
 function OrangeBarChart({ score }: { score: CareerMatchScore }) {
   const bars = [
