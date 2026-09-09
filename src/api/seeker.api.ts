@@ -24,7 +24,11 @@ import type {
 } from '@/types/career-onboarding.types'
 import type {
   JobMatcherResult,
+  JobPostingDetail,
+  JobPostingList,
+  LeaderboardResponse,
   PipelineRun,
+  RoadmapProgress,
   TalentForgerResult,
 } from '@/types/career-pipeline.types'
 
@@ -188,8 +192,40 @@ export const seekerApi = {
       matchId ? { params: { matchId } } : undefined,
     ),
 
+  getRoadmapProgress: (sessionId: string, matchId: string) =>
+    api.get<ApiResponse<RoadmapProgress>>(
+      `${basePath}/${sessionId}/learning-paths/${encodeURIComponent(matchId)}/progress`,
+    ),
+
+  setRoadmapStepProgress: (
+    sessionId: string,
+    matchId: string,
+    stepId: string,
+    completed: boolean,
+  ) =>
+    api.put<ApiResponse<RoadmapProgress>>(
+      `${basePath}/${sessionId}/learning-paths/${encodeURIComponent(matchId)}/steps/${encodeURIComponent(stepId)}/progress`,
+      { completed },
+    ),
+
   getPipelineStatus: <T>(sessionId: string, pipelineRunId: string) =>
     api.get<ApiResponse<PipelineRun<T>>>(
       `${basePath}/${sessionId}/ai-pipeline/${pipelineRunId}`,
+    ),
+
+  getLeaderboard: (limit?: number) =>
+    api.get<ApiResponse<LeaderboardResponse>>(
+      '/job-seeker/leaderboard',
+      limit ? { params: { limit } } : undefined,
+    ),
+
+  getJobPostings: (params?: { search?: string; limit?: number }) =>
+    api.get<ApiResponse<JobPostingList>>('/job-seeker/job-postings', {
+      params,
+    }),
+
+  getJobPosting: (id: string) =>
+    api.get<ApiResponse<JobPostingDetail>>(
+      `/job-seeker/job-postings/${encodeURIComponent(id)}`,
     ),
 }
