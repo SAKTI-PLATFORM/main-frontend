@@ -10,6 +10,7 @@ const SECTION_LABELS: Record<string, string> = {
   '/job-seeker': 'Dashboard',
   '/job-seeker/personality': 'Psikometri Hasil Sakti',
   '/job-seeker/job-matches': 'Career Forecast',
+  '/job-seeker/job-matches/explore': 'Cari Lowongan',
   '/job-seeker/learning-paths': 'Roadmap Belajar',
 }
 
@@ -17,13 +18,15 @@ export function DashboardTopBar() {
   const pathname = usePathname()
   const { view, setView, jobMatchesDetailName, setJobMatchesDetailId, setJobMatchesDetailName } = useDashboardView()
   const isHome = pathname === '/job-seeker'
-  const isJobMatches = pathname === '/job-seeker/job-matches'
+  const isJobMatchesBase = pathname === '/job-seeker/job-matches'
+  const isJobMatchesExplore = pathname === '/job-seeker/job-matches/explore'
+  const isJobMatches = isJobMatchesBase || isJobMatchesExplore
   const isLearningPathsBase = pathname === '/job-seeker/learning-paths'
   const isExploreRoadmap = pathname === '/job-seeker/learning-paths/explore'
   const isRoadmapDetail = pathname.startsWith('/job-seeker/learning-paths/') && pathname.endsWith('/roadmap')
   const isLearningPaths = isLearningPathsBase || isRoadmapDetail
   
-  const section = SECTION_LABELS[pathname] ?? (isExploreRoadmap ? 'Cari Roadmap' : isRoadmapDetail ? 'Detail Roadmap' : 'Dashboard')
+  const section = SECTION_LABELS[pathname] ?? (isExploreRoadmap ? 'Cari Materi' : isRoadmapDetail ? 'Detail Roadmap' : 'Dashboard')
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-[#ECECF2] bg-[#F7F7FA] px-5 sm:px-8">
@@ -42,7 +45,7 @@ export function DashboardTopBar() {
             <span className="text-[#C7C7D2]">/</span>
             <span className="font-semibold text-[#26262F]">Detail Roadmap</span>
           </>
-        ) : isJobMatches && jobMatchesDetailName ? (
+        ) : isJobMatchesBase && jobMatchesDetailName ? (
           <>
             <button 
               type="button" 
@@ -98,20 +101,30 @@ export function DashboardTopBar() {
 
         {isJobMatches && (
           <div className="flex items-center gap-1 rounded-lg bg-[#EFEEFF] p-1">
-            <button
-              type="button"
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-semibold transition-colors bg-white text-[#FF6B00] shadow-sm"
+            <Link
+              href="/job-seeker/job-matches"
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] transition-colors',
+                isJobMatchesBase
+                  ? 'bg-white font-semibold text-[#FF6B00] shadow-sm'
+                  : 'font-medium text-[#6E6E86] hover:text-[#302D37]',
+              )}
             >
               <Briefcase className="size-4" />
               Potensi Karir
-            </button>
-            <button
-              type="button"
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors text-[#6E6E86] hover:text-[#302D37]"
+            </Link>
+            <Link
+              href="/job-seeker/job-matches/explore"
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] transition-colors',
+                isJobMatchesExplore
+                  ? 'bg-white font-semibold text-[#FF6B00] shadow-sm'
+                  : 'font-medium text-[#6E6E86] hover:text-[#302D37]',
+              )}
             >
               <Binoculars className="size-4" />
               Cari Lowongan
-            </button>
+            </Link>
           </div>
         )}
 
