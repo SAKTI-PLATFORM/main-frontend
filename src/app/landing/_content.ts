@@ -6,6 +6,7 @@
 import type { Stat } from './_data'
 import type { EngineStep, NumberedItem, ProfileTab, StatCard } from './_components/blocks'
 import type { Tier } from './_components/pricing'
+import type { EconomicsCard } from './_components/credit-economics'
 import type { FaqGroup } from './_components/faq-groups'
 import type { SkillGapRow } from './_components/skill-gap-card'
 
@@ -522,6 +523,27 @@ export const harga = {
         cta: { label: 'Daftar Sebagai Perusahaan', href: '/register' },
       },
     ] satisfies Tier[],
+  },
+  economics: {
+    eyebrow: 'Unit economics',
+    title: 'Ekonomi per credit: proof of concept',
+    lead: 'Pencari kerja bayar per pemakaian model. Dapat 5 credit gratis di awal, lalu Rp1.500 per credit — dengan margin sehat di tiap paket 5 credit.',
+    cards: [
+      {
+        audience: 'Job Seekers (B2C)',
+        price: 'Rp1.500',
+        priceUnit: '/credit',
+        model: 'Pay-per-use per model',
+        flow: {
+          from: { title: '5 Free Credits', note: 'for new user' },
+          to: { title: 'Pay-per-use', note: 'akses model AI' },
+        },
+        metrics: [
+          { value: 'Rp7.500', label: 'Revenue / 5 Credit' },
+          { value: 'Rp500', label: 'AI Cost / 5 Credit' },
+        ],
+      },
+    ] satisfies EconomicsCard[],
   },
   faq: {
     eyebrow: 'Pertanyaan soal harga',
