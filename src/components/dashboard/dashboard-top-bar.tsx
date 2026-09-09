@@ -152,7 +152,7 @@ export function DashboardTopBar() {
               )}
             >
               <Search className="size-4" />
-              Cari Roadmap
+              Cari Materi
             </Link>
           </div>
         )}
