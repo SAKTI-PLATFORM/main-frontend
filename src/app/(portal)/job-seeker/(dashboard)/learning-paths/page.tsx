@@ -1,487 +1,238 @@
 'use client'
 
 import {
-  AlertCircle,
-  ArrowRight,
-  BadgeCheck,
-  BookOpen,
-  CirclePlay,
-  ExternalLink,
-  FileText,
-  LibraryBig,
+  Bell,
+  LayoutGrid,
+  PersonStanding,
+  BriefcaseBusiness,
+  TrendingUp,
+  Map,
   LockKeyhole,
-  UserRoundCheck,
-  Waypoints,
-  Workflow,
+  Search,
+  ArrowRight,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useMemo, useState, useSyncExternalStore } from 'react'
-import {
-  DashboardError,
-  DashboardLoading,
-} from '@/components/dashboard/dashboard-status'
-import { AITurnTrail } from '@/components/career-pipeline/ai-turn-trail'
-import { Badge } from '@/components/ui/badge'
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Cell, Tooltip } from 'recharts'
 import { Button } from '@/components/ui/button'
-import { MathCurveLoader } from '@/components/ui/math-curve-loader'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { useCareerPipeline } from '@/features/career-pipeline/use-career-pipeline'
-import { useDashboard } from '@/features/dashboard/use-dashboard'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import type {
-  JobMatcherResult,
-  LearningPathStepResult,
-  LearningResourceResult,
-  TalentForgerResult,
-} from '@/types/career-pipeline.types'
+import { mockLeaderboard, mockRoadmapOptions, mockSkillGaps } from './mock-data'
 
-export default function LearningPathsPage() {
-  const dashboard = useDashboard()
-  const sessionId =
-    dashboard.status === 'ready' && dashboard.session?.status === 'COMPLETED'
-      ? dashboard.session.onboarding_session_id
-      : null
-  const matches = useCareerPipeline<JobMatcherResult>(sessionId, 'job-matcher')
-  const requestedMatch = useSyncExternalStore(subscribeToLocation, readRequestedMatch, () => null)
-  const [selection, setSelection] = useState('')
-
-  const availableMatches = matches.run?.status === 'COMPLETED'
-    ? [...(matches.run.result?.career_match_results ?? [])].sort(
-        (left, right) => right.total_match_score - left.total_match_score,
-      )
-    : []
-  const topMatchId = availableMatches[0]?.match_id ?? ''
-  const selectedMatchId =
-    selection ||
-    (requestedMatch && availableMatches.some((match) => match.match_id === requestedMatch)
-      ? requestedMatch
-      : availableMatches[0]?.match_id) ||
-    ''
-  const selectedMatch = availableMatches.find((match) => match.match_id === selectedMatchId)
-  // Reads the run saved for this exact role, so a roadmap generated earlier
-  // comes straight back from the backend instead of being regenerated. Only the
-  // top match is queued automatically, so only that one is worth waiting on.
-  const learning = useCareerPipeline<TalentForgerResult>(sessionId, 'talent-forger', {
-    matchId: selectedMatchId,
-    pollWhenMissing: Boolean(selectedMatchId) && selectedMatchId === topMatchId,
-  })
-
-  if (dashboard.status === 'loading' || matches.loading || learning.loading) return <DashboardLoading />
-  if (dashboard.status === 'error') return <DashboardError />
-  if (!sessionId) return <OnboardingRequired />
-
-  const busy =
-    learning.generating ||
-    learning.run?.status === 'PENDING' ||
-    learning.run?.status === 'RUNNING'
-  const result = learning.run?.status === 'COMPLETED' ? learning.run.result : null
-  const awaitingAutoRun =
-    !learning.run && Boolean(selectedMatchId) && selectedMatchId === topMatchId
-  const needsManualGeneration = Boolean(
-    selectedMatchId &&
-      !busy &&
-      (learning.run?.status === 'FAILED' || (!learning.run && !awaitingAutoRun)),
-  )
+export default function LearningPathsOverviewPage() {
+  const currentRole = "The Backend Developer Path"
 
   return (
     <div className="min-h-full bg-[#F7F7FB] px-4 py-5 sm:px-6 sm:py-7">
-      <div className="mx-auto max-w-[1480px] space-y-5">
-        <LearningRoleControl
-          availableMatches={availableMatches}
-          selectedMatchId={selectedMatchId}
-          selectedRole={selectedMatch?.role_name}
-          busy={busy}
-          needsManualGeneration={needsManualGeneration}
-          onSelect={setSelection}
-          onGenerate={() => void learning.generate(selectedMatchId)}
-        />
+      <div className="mx-auto max-w-[1480px]">
 
-        {!availableMatches.length && <JobMatchesRequired />}
-        {busy && (
-          <>
-            <PipelineNotice
-              tone="loading"
-              title="Roadmap-mu sedang disusun"
-              description="TalentForger sedang memilih urutan skill, durasi, dan resource belajar yang paling relevan. Halaman ini akan diperbarui otomatis."
-            />
-            <AITurnTrail turns={learning.run?.turns} inFlight />
-          </>
-        )}
-        {learning.run?.status === 'FAILED' && (
-          <PipelineNotice
-            tone="error"
-            title="Learning path belum berhasil dibuat"
-            description={learning.run.errorMessage || 'TalentForger gagal setelah tiga percobaan otomatis.'}
-          />
-        )}
-        {availableMatches.length > 0 && awaitingAutoRun && (
-          <PipelineNotice
-            tone="loading"
-            title="Learning path utama sedang disiapkan"
-            description="Role dengan match tertinggi diproses otomatis. Kamu tetap dapat memilih role lain dan membuat roadmapnya setelah proses utama selesai."
-          />
-        )}
-        {availableMatches.length > 0 && !learning.run && !awaitingAutoRun && (
-          <PipelineNotice
-            tone="idle"
-            title="Roadmap untuk role ini belum dibuat"
-            description="Role ini belum punya learning path tersimpan. Klik 'Buat learning path' untuk menyusunnya sekali — setelah itu hasilnya langsung dimuat dari data tersimpan."
-          />
-        )}
-        {result && <LearningPathContent result={result} />}
-      </div>
-    </div>
-  )
-}
 
-function LearningRoleControl({
-  availableMatches,
-  selectedMatchId,
-  selectedRole,
-  busy,
-  needsManualGeneration,
-  onSelect,
-  onGenerate,
-}: {
-  availableMatches: JobMatcherResult['career_match_results']
-  selectedMatchId: string
-  selectedRole?: string
-  busy: boolean
-  needsManualGeneration: boolean
-  onSelect: (value: string) => void
-  onGenerate: () => void
-}) {
-  return (
-    <section className="flex flex-col justify-between gap-4 border-b border-[#E7E4EE] pb-5 sm:flex-row sm:items-end">
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-primary">Learning path</p>
-        <h1 className="mt-1 text-2xl font-bold tracking-[-0.02em] text-[#292631]">
-          {selectedRole || 'Menyiapkan role terbaikmu'}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Role teratas dibuat otomatis. Pilih role lain jika ingin membuat roadmap tambahan.
-        </p>
-      </div>
-      <div className="flex min-w-0 flex-col gap-2 sm:min-w-[430px] sm:flex-row">
-        <label className="sr-only" htmlFor="learning-target-role">Target role</label>
-            <select
-              id="learning-target-role"
-              value={selectedMatchId}
-              onChange={(event) => onSelect(event.target.value)}
-              disabled={!availableMatches.length || busy}
-              className="h-11 min-w-0 flex-1 rounded-xl border border-[#DDD9E8] bg-white px-3 text-sm font-semibold text-[#302D37] outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              {!availableMatches.length && <option value="">Job Matches belum tersedia</option>}
-              {availableMatches.map((match) => (
-                <option key={match.match_id} value={match.match_id}>
-                  {match.role_name} · {Math.round(match.total_match_score)}%
-                </option>
-              ))}
-            </select>
-        {needsManualGeneration && (
-          <Button
-              size="lg"
-              disabled={!selectedMatchId || busy}
-              onClick={onGenerate}
-              className="h-11 rounded-xl px-4 font-bold"
-            >
-              {busy ? <MathCurveLoader size={20} label="Menyusun roadmap" /> : <Workflow />}
-              {busy ? 'Sedang diproses' : 'Buat learning path'}
-            </Button>
-        )}
-      </div>
-    </section>
-  )
-}
+        <div className="grid items-stretch gap-6 xl:grid-cols-[1fr_360px]">
+          {/* Main Left Content */}
+          <div className="flex flex-col gap-6 h-full">
+            {/* Skill Gap Blue Card */}
+            <Card className="overflow-hidden rounded-2xl border-none bg-[#0D62F9] text-white">
+              <CardContent className="p-6 sm:p-8">
+                <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+                  <div>
+                    <p className="text-sm font-medium text-white/80">Analisis Skill Gap dan Roadmap</p>
+                    <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{currentRole}</h1>
+                  </div>
+                  <div className="flex items-center gap-4 rounded-xl bg-white/10 p-2 pr-2.5 pl-4 backdrop-blur-md">
+                    <div className="flex flex-col items-end text-white">
+                      <span className="text-[11px] font-medium opacity-80 uppercase tracking-wider">Kemajuan</span>
+                      <span className="text-lg font-bold leading-none">45%</span>
+                    </div>
+                    <Link
+                      href="/job-seeker/learning-paths/1-full-stack/roadmap"
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-white px-4 text-sm font-bold text-[#0D62F9] shadow-sm transition-transform hover:scale-105 active:scale-95"
+                    >
+                      Lanjutkan Belajar <ArrowRight className="size-4" />
+                    </Link>
+                  </div>
+                </div>
 
-function LearningPathContent({ result }: { result: TalentForgerResult }) {
-  const path = result.learning_paths[0]
-  const steps = useMemo(
-    () => [...result.learning_path_steps].sort((left, right) => left.step_order - right.step_order),
-    [result.learning_path_steps],
-  )
-  const allResources = useMemo(
-    () => dedupeResources([...result.learning_resources, ...result.free_materials]),
-    [result.free_materials, result.learning_resources],
-  )
-  const [selectedStepId, setSelectedStepId] = useState('')
-  const selectedStep = steps.find((step) => step.step_id === selectedStepId) ?? steps[0]
-  const selectedResources = selectedStep
-    ? resourcesForStep(selectedStep, result, allResources)
-    : []
-  if (!path) {
-    return (
-      <PipelineNotice
-        tone="error"
-        title="Roadmap kosong"
-        description="Pipeline selesai tetapi belum menghasilkan learning path yang dapat ditampilkan."
-      />
-    )
-  }
+                <div className="mt-8 h-48 w-full sm:mt-12">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={mockSkillGaps} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                      <YAxis domain={[0, 100]} hide />
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: 'white', fontSize: 13, fontWeight: 500 }}
+                        dy={12}
+                      />
+                      <Tooltip
+                        cursor={{ fill: 'rgba(255, 255, 255, 0.15)', radius: 8 }}
+                        contentStyle={{ borderRadius: '8px', border: 'none', backgroundColor: '#ffffff', color: '#005ED5', fontWeight: 'bold' }}
+                        itemStyle={{ color: '#005ED5' }}
+                        formatter={(value) => [`${value}%`, 'Progress']}
+                      />
+                      <Bar
+                        dataKey="value"
+                        radius={[8, 8, 8, 8]}
+                        barSize={120}
+                        background={{ fill: 'rgba(255, 255, 255, 0.4)', radius: 8 }}
+                      >
+                        {mockSkillGaps.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
 
-  return (
-    <>
-      <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
-        <Card className="rounded-3xl bg-white shadow-[0_8px_30px_rgba(38,30,92,0.05)] ring-[#E9E7F2]">
-          <CardHeader className="border-b border-[#EFEDF5] px-5 pb-4 sm:px-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-lg font-bold"><Waypoints className="size-5 text-primary" />Roadmap belajar</CardTitle>
-                <CardDescription className="mt-1">Ikuti tahap secara berurutan untuk hasil yang optimal.</CardDescription>
-              </div>
-              <Badge className="bg-[#EEEBFF] text-[#5142C7] hover:bg-[#EEEBFF]">{path.learning_path_type}</Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="px-5 pb-1 sm:px-6">
-            {steps.length > 0 ? (
-              <div className="relative">
-                <div className="absolute bottom-8 left-[19px] top-8 w-px bg-[#DDD8F0]" />
-                <div className="space-y-3">
-                  {steps.map((step, index) => (
-                    <TimelineStep
-                      key={step.step_id}
-                      step={step}
-                      index={index}
-                      active={step.step_id === selectedStep?.step_id}
-                      onSelect={() => setSelectedStepId(step.step_id)}
-                    />
+            {/* Pilihan Roadmap lain */}
+            <Card className="rounded-3xl border-0 border-[#E9E7F2] gap-0 bg-white overflow-hidden flex-1 flex flex-col">
+              <CardHeader className="px-6 py-2">
+                <CardTitle className="text-xl font-normal text-gray-400">Pilihan Roadmap lain</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="flex flex-col">
+                  {mockRoadmapOptions.map((roadmap: any, index: number) => (
+                    <div key={roadmap.id} className={cn(
+                      "group relative flex flex-col justify-between gap-4 p-6 md:flex-row md:items-center transition-colors hover:bg-blue-50/40 cursor-pointer",
+                      index !== mockRoadmapOptions.length - 1 && "border-b border-[#E9E7F2]"
+                    )}>
+                      {/* Make the entire row clickable to the roadmap detail */}
+                      <Link href={`/job-seeker/learning-paths/${roadmap.id}/roadmap`} className="absolute inset-0 z-10">
+                        <span className="sr-only">Lihat Detail {roadmap.title}</span>
+                      </Link>
+
+                      <div className="space-y-3 flex-1 relative z-20 pointer-events-none">
+                        <div className="flex items-center gap-2 justify-start">
+                          <h3 className="text-lg font-bold text-[#302D37] group-hover:text-[#0D62F9] transition-colors">{roadmap.title}</h3>
+                          <Badge variant="outline" className="rounded-sm border-orange-200 bg-orange-50 text-orange-600 font-medium">
+                            {roadmap.priority}
+                          </Badge>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Keterampilan Target:</span>
+                          {roadmap.skills.map((skill: string) => (
+                            <Badge key={skill} variant="secondary" className="bg-gray-100 text-gray-600 font-medium">{skill}</Badge>
+                          ))}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-muted-foreground pt-1">
+                          <span className="flex items-center gap-1.5"><TrendingUp className="size-4" /> {roadmap.duration}</span>
+                          <span className="flex items-center gap-1.5"><LayoutGrid className="size-4" /> {roadmap.videos}</span>
+                          <span className="flex items-center gap-1.5"><BriefcaseBusiness className="size-4" /> {roadmap.level}</span>
+                        </div>
+                      </div>
+
+                      <div className="relative flex min-w-[150px] flex-col items-end justify-center z-20 pointer-events-none">
+                        {/* Default state: Progress bar */}
+                        <div className="flex w-full flex-col items-end transition-all duration-300 group-hover:opacity-0 group-hover:-translate-y-2">
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-2xl font-bold text-emerald-600">{roadmap.progress}%</span>
+                          </div>
+                          <span className="text-sm font-medium text-muted-foreground">kemajuan</span>
+                          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${roadmap.progress}%` }} />
+                          </div>
+                        </div>
+
+                        {/* Hover state: CTA Button */}
+                        <div className="absolute inset-0 flex items-center justify-end opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 translate-y-2">
+                          <div className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0D62F9] px-5 text-sm font-medium text-white shadow-sm transition-colors group-hover:bg-[#0047A5]">
+                            Lihat Detail <ArrowRight className="size-4" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </div>
-            ) : (
-              <div className="rounded-2xl bg-[#FAF9FC] p-6 text-center text-sm text-muted-foreground">Belum ada tahap belajar.</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <StepResourcePanel step={selectedStep} resources={selectedResources} />
-      </section>
-
-      <ResourceLibrary resources={allResources} />
-    </>
-  )
-}
-
-function TimelineStep({
-  step,
-  index,
-  active,
-  onSelect,
-}: {
-  step: LearningPathStepResult
-  index: number
-  active: boolean
-  onSelect: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        'relative flex w-full items-start gap-4 rounded-2xl p-3 text-left transition sm:p-4',
-        active ? 'bg-[#F1EEFF] ring-1 ring-[#D8D1FF]' : 'hover:bg-[#FAF9FC]',
-      )}
-    >
-      <span className={cn('relative z-10 grid size-10 shrink-0 place-items-center rounded-full border-4 border-white text-xs font-bold shadow-sm', active ? 'bg-primary text-white' : 'bg-[#EAE6F5] text-[#766F84]')}>
-        {index + 1}
-      </span>
-      <span className="min-w-0 flex-1 py-0.5">
-        <span className="flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-primary">Minggu {step.week}</span>
-          <span className="size-1 rounded-full bg-[#BBB5C8]" />
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{step.related_skill_name}</span>
-        </span>
-        <span className="mt-1 block text-sm font-bold text-[#302D37] sm:text-base">{step.topic}</span>
-        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{step.objective}</span>
-      </span>
-      <ArrowRight className={cn('mt-3 size-4 shrink-0 transition', active ? 'text-primary' : 'text-[#B8B3C1]')} />
-    </button>
-  )
-}
-
-function StepResourcePanel({
-  step,
-  resources,
-}: {
-  step?: LearningPathStepResult
-  resources: LearningResourceResult[]
-}) {
-  return (
-    <Card className="rounded-3xl bg-white shadow-[0_8px_30px_rgba(38,30,92,0.05)] ring-[#E9E7F2] xl:sticky xl:top-5">
-      <CardHeader className="border-b border-[#EFEDF5] px-5 pb-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary">Resource tahap aktif</p>
-            <CardTitle className="mt-1 text-lg font-bold">{step?.topic || 'Pilih tahap'}</CardTitle>
-            <CardDescription className="mt-1">{step ? `Minggu ${step.week} · ${step.related_skill_name}` : 'Pilih salah satu tahap di roadmap.'}</CardDescription>
+              </CardContent>
+            </Card>
           </div>
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#EEEBFF] text-primary"><LibraryBig className="size-5" /></span>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3 px-4 pb-0">
-        {resources.length > 0 ? resources.map((resource) => (
-          <ResourceCard key={`${resource.resource_id}-${resource.url}`} resource={resource} compact />
-        )) : (
-          <div className="flex min-h-40 flex-col items-center justify-center rounded-2xl bg-[#FAF9FC] px-5 text-center">
-            <BookOpen className="size-6 text-[#A39DAF]" />
-            <p className="mt-2 text-sm font-semibold">Belum ada resource tertaut</p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">Lihat library di bawah untuk materi lain dengan skill yang sama.</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
 
-function ResourceLibrary({ resources }: { resources: LearningResourceResult[] }) {
-  const [filter, setFilter] = useState<'all' | 'free'>('all')
-  const visible = filter === 'free' ? resources.filter((resource) => resource.is_free) : resources
+          {/* Right Sidebar */}
+          <div className="flex flex-col gap-6 border-0 h-full">
+            <Card className="rounded-3xl gap-0 border-0 border-[#E9E7F2] bg-white flex-1 flex flex-col">
+              <CardHeader className="border-b border-[#EFEDF5] px-6 py-2 shrink-0">
+                <CardTitle className="text-lg font-bold text-[#292631]">Papan Peringkat</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 flex-1 flex flex-col">
+                {/* Top 3 podium dummy style */}
+                <div className="flex items-end justify-center gap-4 border-1 border-[#EFEDF5] p-6 shrink-0">
+                  {/* Rank 2 */}
+                  <div className="flex flex-col items-center">
+                    <div className="text-2xl font-light text-gray-300">02</div>
+                    <div className="mt-2 text-xs font-medium text-gray-700">{mockLeaderboard[1].name}</div>
+                    <div className="text-[10px] text-gray-400">{mockLeaderboard[1].daysStreak} Hari Berturut</div>
+                    <div className="mt-1 font-bold text-[#0D62F9]">{mockLeaderboard[1].xp.toLocaleString()} XP</div>
+                    <div className="mt-2 h-16 w-16 rounded-t-lg bg-[#538EFA]"></div>
+                  </div>
+                  {/* Rank 1 */}
+                  <div className="flex flex-col items-center">
+                    <div className="text-3xl font-light text-gray-300">01</div>
+                    <div className="mt-2 text-xs font-medium text-gray-700">{mockLeaderboard[0].name}</div>
+                    <div className="text-[10px] text-gray-400">{mockLeaderboard[0].daysStreak} Hari Berturut</div>
+                    <div className="mt-1 font-bold text-[#0D62F9]">{mockLeaderboard[0].xp.toLocaleString()} XP</div>
+                    <div className="mt-2 h-24 w-16 rounded-t-lg bg-[#0D62F9]"></div>
+                  </div>
+                  {/* Rank 3 */}
+                  <div className="flex flex-col items-center">
+                    <div className="text-2xl font-light text-gray-300">03</div>
+                    <div className="mt-2 text-xs font-medium text-gray-700">{mockLeaderboard[2].name}</div>
+                    <div className="text-[10px] text-gray-400">{mockLeaderboard[2].daysStreak} Hari Berturut</div>
+                    <div className="mt-1 font-bold text-[#0D62F9]">{mockLeaderboard[2].xp.toLocaleString()} XP</div>
+                    <div className="mt-2 h-12 w-16 rounded-t-lg bg-[#8FB5FB]"></div>
+                  </div>
+                </div>
 
-  return (
-    <Card className="rounded-3xl bg-white shadow-[0_8px_30px_rgba(38,30,92,0.05)] ring-[#E9E7F2]">
-      <CardHeader className="border-b border-[#EFEDF5] px-5 pb-4 sm:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div><CardTitle className="flex items-center gap-2 text-lg font-bold"><BookOpen className="size-5 text-emerald-600" />Learning resource library</CardTitle><CardDescription className="mt-1">Kursus, sertifikasi, video, dan materi gratis untuk roadmap ini.</CardDescription></div>
-          <div className="flex rounded-xl bg-[#F3F1F8] p-1">
-            <button type="button" onClick={() => setFilter('all')} className={cn('rounded-lg px-3 py-1.5 text-xs font-semibold', filter === 'all' ? 'bg-white text-primary shadow-sm' : 'text-muted-foreground')}>Semua ({resources.length})</button>
-            <button type="button" onClick={() => setFilter('free')} className={cn('rounded-lg px-3 py-1.5 text-xs font-semibold', filter === 'free' ? 'bg-white text-primary shadow-sm' : 'text-muted-foreground')}>Gratis ({resources.filter((item) => item.is_free).length})</button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="grid gap-3 px-5 pb-1 md:grid-cols-2 xl:grid-cols-3 sm:px-6">
-        {visible.map((resource) => <ResourceCard key={`${resource.resource_id}-${resource.url}`} resource={resource} />)}
-      </CardContent>
-    </Card>
-  )
-}
+                {/* Current User position */}
+                <div className="bg-blue-50/50 px-6 py-4 shrink-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-gray-500">Posisi Anda Saat Ini</span>
+                    <span className="text-[10px] font-bold text-[#0D62F9]">Teruskan Perjuangan!</span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between rounded-xl bg-[#0D62F9] px-4 py-3 text-white shadow-md">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl font-light opacity-80">{mockLeaderboard[9].rank}</span>
+                      <div>
+                        <div className="text-sm font-bold">{mockLeaderboard[9].name}</div>
+                        <div className="text-[10px] opacity-80">{mockLeaderboard[9].daysStreak} Hari Berturut-turut</div>
+                      </div>
+                    </div>
+                    <div className="text-sm font-bold">{mockLeaderboard[9].xp.toLocaleString()} XP</div>
+                  </div>
+                </div>
 
-function ResourceCard({ resource, compact = false }: { resource: LearningResourceResult; compact?: boolean }) {
-  return (
-    <a
-      href={resource.url}
-      target="_blank"
-      rel="noreferrer"
-      className={cn(
-        'group block rounded-2xl border border-[#ECE9F2] transition hover:-translate-y-0.5 hover:border-[#CFC7F5] hover:shadow-[0_10px_24px_rgba(56,36,175,0.08)]',
-        compact ? 'p-3.5' : 'p-4',
-      )}
-    >
-      <div className="flex items-start gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#F0EDFF] text-primary"><ResourceTypeIcon type={resource.resource_type} /></span>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="line-clamp-2 text-sm font-bold leading-5 text-[#302D37]">{resource.resource_title}</h3>
-            <ExternalLink className="mt-0.5 size-3.5 shrink-0 text-[#AAA5B4] transition group-hover:text-primary" />
+                {/* Rest of the list */}
+                <div className="px-6 py-4 flex-1 flex flex-col">
+                  <div className="space-y-4 flex-1">
+                    {mockLeaderboard.slice(3, 10).map((user) => (
+                      <div key={user.id} className="flex items-center justify-between border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                        <div className="flex items-center gap-4">
+                          <span className="text-lg font-light text-gray-300">{user.rank < 10 ? `0${user.rank}` : user.rank}</span>
+                          <div>
+                            <div className="text-sm font-medium text-gray-700">{user.name}</div>
+                            <div className="text-[10px] text-gray-400">{user.daysStreak} Hari Berturut-turut</div>
+                          </div>
+                        </div>
+                        <div className="text-sm font-bold text-gray-700">{user.xp.toLocaleString()} XP</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-6 shrink-0">
+                    <Link
+                      href="/job-seeker/learning-paths/leaderboard"
+                      className="inline-flex h-8 items-center justify-center rounded-lg border border-[#0D62F9]/20 bg-background text-[#0D62F9] text-sm font-medium w-full transition-colors hover:bg-[#0D62F9]/5"
+                    >
+                      Lihat Papan Peringkat Lengkap
+                    </Link>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-          <p className="mt-1 truncate text-xs text-muted-foreground">{resource.provider}</p>
         </div>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        <Badge variant="secondary" className="text-[10px]">{resource.resource_type}</Badge>
-        <Badge variant="outline" className="text-[10px]">{resource.estimated_duration_hours} jam</Badge>
-        {resource.is_free && <Badge className="bg-emerald-50 text-[10px] text-emerald-700 hover:bg-emerald-50">Gratis</Badge>}
-      </div>
-      {!compact && <p className="mt-3 text-xs font-medium text-[#736D7E]">{resource.skill_name} · {resource.difficulty_level}</p>}
-    </a>
-  )
-}
-
-function JobMatchesRequired() {
-  return (
-    <Card className="rounded-3xl bg-white ring-[#E9E7F2]">
-      <CardContent className="flex min-h-64 flex-col items-center justify-center px-6 py-6 text-center">
-        <span className="grid size-14 place-items-center rounded-2xl bg-amber-50 text-amber-600"><LockKeyhole className="size-6" /></span>
-        <h2 className="mt-4 text-xl font-bold">Job Matches diperlukan</h2>
-        <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">Learning path dibuat dari skill gap sebuah role. JobMatcher akan berjalan otomatis setelah onboarding selesai.</p>
-        <Link href="/job-seeker/job-matches" className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white">Buka Job Matches <ArrowRight className="size-4" /></Link>
-      </CardContent>
-    </Card>
-  )
-}
-
-function PipelineNotice({ tone, title, description }: { tone: 'loading' | 'idle' | 'error'; title: string; description: string }) {
-  const palette = {
-    loading: ['border-violet-100 bg-violet-50 text-violet-900', 'bg-violet-100'],
-    idle: ['border-[#E7E4EE] bg-[#F8F7FB] text-[#3E3A47]', 'bg-[#EEEBFF] text-primary'],
-    error: ['border-rose-100 bg-rose-50 text-rose-900', 'bg-rose-100'],
-  }[tone]
-  return (
-    <div className={cn('flex items-start gap-3 rounded-2xl border p-4', palette[0])}>
-      <span className={cn('grid size-9 shrink-0 place-items-center rounded-xl', palette[1])}>
-        {tone === 'loading' ? <MathCurveLoader size={26} label="Memproses learning path" /> : tone === 'idle' ? <Workflow className="size-4" /> : <AlertCircle className="size-4" />}
-      </span>
-      <div><p className="text-sm font-bold">{title}</p><p className="mt-1 text-xs leading-5 opacity-75">{description}</p></div>
     </div>
   )
-}
-
-function OnboardingRequired() {
-  return (
-    <div className="min-h-full bg-[#F7F7FB] p-5 sm:p-7">
-      <Card className="mx-auto max-w-2xl rounded-3xl bg-white ring-[#E9E7F2]">
-        <CardContent className="flex min-h-80 flex-col items-center justify-center px-6 text-center">
-          <span className="grid size-14 place-items-center rounded-2xl bg-[#EEEBFF] text-primary"><UserRoundCheck className="size-6" /></span>
-          <h1 className="mt-4 text-xl font-bold">Selesaikan onboarding terlebih dahulu</h1>
-          <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">Profil yang lengkap diperlukan untuk menyusun learning path yang personal dan relevan.</p>
-          <Link className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white" href="/job-seeker/onboarding">Lanjutkan onboarding <ArrowRight className="size-4" /></Link>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-function resourcesForStep(
-  step: LearningPathStepResult,
-  result: TalentForgerResult,
-  resources: LearningResourceResult[],
-): LearningResourceResult[] {
-  const ids = result.resource_recommendations
-    .filter((recommendation) => recommendation.step_id === step.step_id)
-    .sort((left, right) => left.priority_order - right.priority_order)
-    .map((recommendation) => recommendation.resource_id)
-  const matched = ids
-    .map((id) =>
-      resources.find(
-        (resource) =>
-          resource.resource_id === id &&
-          resource.skill_name.toLowerCase() === step.related_skill_name.toLowerCase(),
-      ) ?? resources.find((resource) => resource.resource_id === id),
-    )
-    .filter((resource): resource is LearningResourceResult => Boolean(resource))
-  if (matched.length > 0) return dedupeResources(matched)
-  return resources
-    .filter((resource) => resource.skill_name.toLowerCase() === step.related_skill_name.toLowerCase())
-    .slice(0, 4)
-}
-
-function dedupeResources(resources: LearningResourceResult[]): LearningResourceResult[] {
-  const seen = new Set<string>()
-  return resources.filter((resource) => {
-    const key = `${resource.skill_name}|${resource.resource_title}|${resource.url}`.toLowerCase()
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
-}
-
-function ResourceTypeIcon({ type }: { type: string }) {
-  const normalized = type.toLowerCase()
-  if (normalized.includes('video')) return <CirclePlay className="size-4" />
-  if (normalized.includes('cert')) return <BadgeCheck className="size-4" />
-  if (normalized.includes('article') || normalized.includes('document')) return <FileText className="size-4" />
-  return <BookOpen className="size-4" />
-}
-
-function subscribeToLocation(): () => void {
-  return () => undefined
-}
-
-function readRequestedMatch(): string | null {
-  return new URLSearchParams(window.location.search).get('match')
 }

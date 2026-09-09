@@ -158,7 +158,7 @@ export function Sidebar() {
         ) : (
           <>
             <Image
-              src="/logo.png"
+              src="/SAKTI_LOGO.svg"
               alt="SAKTI AI"
               width={584}
               height={211}
