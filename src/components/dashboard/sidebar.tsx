@@ -1,9 +1,9 @@
 'use client'
 
 import {
-  ArrowUpRight,
   Bot,
   ChevronRight,
+  Coins,
   House,
   LogOut,
   PanelLeftClose,
@@ -209,8 +209,8 @@ export function Sidebar() {
         <div className="flex flex-col items-center gap-3 pb-4">
           <button
             type="button"
-            title="Mulai Subscribe — segera hadir"
-            aria-label="Mulai Subscribe"
+            title="Top Up Kredit — segera hadir"
+            aria-label="Top Up Kredit"
             className="flex size-10 items-center justify-center rounded-lg bg-[#3E1DD1] text-white transition-colors hover:bg-[#3315B8]"
           >
             <Zap className="size-4 fill-current" />
@@ -324,21 +324,21 @@ function SubscriptionCard() {
   return (
     <div className="rounded-lg bg-[#EFEEFF] p-4">
       <span className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 text-[11px] font-semibold text-[#4138D8]">
-        <ArrowUpRight className="size-3.5" strokeWidth={2.4} />
-        Basic Subscriptions
+        <Coins className="size-3.5" strokeWidth={2.4} />
+        Kredit Sakti
       </span>
       <p className="mt-2.5 text-[12px] leading-5 text-[#6B6B80]">
-        Kamu saat ini berada pada{' '}
-        <span className="font-semibold text-[#3B3B4C]">basic subscriptions</span>,
-        tingkatkan langganan untuk dapatkan fitur penuh.
+        Sakti pakai sistem kredit.{' '}
+        <span className="font-semibold text-[#3B3B4C]">1 kredit = Rp1.500</span>. Top up
+        sesuai kebutuhan untuk job matching, skill gap report, dan roadmap belajar.
       </p>
       <button
         type="button"
-        title="Mulai Subscribe — segera hadir"
+        title="Top Up Kredit — segera hadir"
         className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#3E1DD1] px-3 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-[#3315B8]"
       >
         <Zap className="size-4 fill-current" />
-        Mulai Subscribe!
+        Top Up Kredit
       </button>
     </div>
   )

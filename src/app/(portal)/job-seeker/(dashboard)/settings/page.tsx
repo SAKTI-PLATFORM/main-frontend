@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowUpRight, LogOut, ShieldAlert, Zap } from 'lucide-react'
+import { Coins, LogOut, ShieldAlert, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { authApi } from '@/api/auth.api'
@@ -89,25 +89,25 @@ export default function SettingsPage() {
 
         <section className="rounded-lg bg-white p-5 ring-1 ring-[#ECECF2] sm:p-6">
           <h2 className="font-heading text-[18px] leading-[27px] font-bold text-[#20202A]">
-            Langganan
+            Kredit
           </h2>
           <div className="mt-4 rounded-lg bg-[#EFEEFF] p-4">
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 text-[11px] font-semibold text-[#4138D8]">
-              <ArrowUpRight className="size-3.5" strokeWidth={2.4} />
-              Basic Subscriptions
+              <Coins className="size-3.5" strokeWidth={2.4} />
+              Kredit Sakti
             </span>
             <p className="mt-2.5 text-[13px] leading-5 text-[#6B6B80]">
-              Kamu saat ini berada pada{' '}
-              <span className="font-semibold text-[#3B3B4C]">basic subscriptions</span>,
-              tingkatkan langganan untuk dapatkan fitur penuh.
+              Sakti pakai sistem kredit.{' '}
+              <span className="font-semibold text-[#3B3B4C]">1 kredit = Rp1.500</span>. Top
+              up sesuai kebutuhan untuk job matching, skill gap report, dan roadmap belajar.
             </p>
             <button
               type="button"
-              title="Mulai Subscribe — segera hadir"
+              title="Top Up Kredit — segera hadir"
               className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-[#3E1DD1] px-3.5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-[#3315B8]"
             >
               <Zap className="size-4 fill-current" />
-              Mulai Subscribe!
+              Top Up Kredit
             </button>
           </div>
         </section>
