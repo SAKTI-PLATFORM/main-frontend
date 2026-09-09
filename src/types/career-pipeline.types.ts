@@ -109,6 +109,100 @@ export interface TalentForgerResult {
   resource_recommendations: ResourceRecommendationResult[]
 }
 
+/** A scraped job listing stored in `career_job_posting`. */
+export interface JobPosting {
+  id: string
+  title: string
+  company: string
+  location: string
+  url: string
+}
+
+export interface JobPostingList {
+  postings: JobPosting[]
+  /** Distinct postings matching the search, before the `limit` cap. */
+  total: number
+}
+
+export interface JobSalary {
+  /** Monthly gross in IDR, or null when undisclosed / unknown. */
+  min: number | null
+  max: number | null
+  currency: string
+  period: 'month' | 'year' | 'hour'
+  /** false → show "Dirahasiakan". */
+  disclosed: boolean
+}
+
+export interface RelatedJob {
+  id: string
+  title: string
+  company: string
+  location: string
+  url: string
+  work_arrangement: string | null
+  salary: JobSalary
+  blurb: string
+}
+
+export interface JobPostingDetail {
+  id: string
+  title: string
+  company: string
+  location: string
+  url: string
+  /** "remote" | "hybrid" | "onsite" | null. */
+  work_arrangement: string | null
+  /** "full_time" | "part_time" | "contract" | "internship" | "freelance" | null. */
+  employment_type: string | null
+  /** "domestic" | "international" | null. */
+  posting_scope: string | null
+  job_field: string | null
+  /** "Lead" | "Senior" | "Junior" | "Internship" | null. */
+  seniority: string | null
+  category: string | null
+  salary: JobSalary
+  /** "male" | "female" | "any" | null. */
+  gender_requirement: string | null
+  tags: string[]
+  match: { score: number | null; reason: string | null }
+  description: string | null
+  qualifications: string[]
+  additional_info: string | null
+  related: RelatedJob[]
+}
+
+export interface LeaderboardEntry {
+  user_id: string
+  name: string
+  xp: number
+  days_streak: number
+  rank: number
+  is_current_user: boolean
+}
+
+export interface LeaderboardResponse {
+  /** Top entries, rank ascending. */
+  entries: LeaderboardEntry[]
+  /** The current user's entry — may also appear in `entries`. */
+  me: LeaderboardEntry | null
+  total_participants: number
+  xp_per_step: number
+}
+
+/** Per-user completion state for the saved roadmap of one career match. */
+export interface RoadmapProgress {
+  match_id: string
+  /** Null until the roadmap has been generated. */
+  pipeline_run_id: string | null
+  total_steps: number
+  completed_steps: number
+  percent: number
+  /** `step_id`s the user has ticked off, ordered as the roadmap lists them. */
+  completed_step_ids: string[]
+  updated_at: string | null
+}
+
 export type TurnType = 'processing' | 'question' | 'result' | 'error'
 export type TurnStatus = 'in_progress' | 'waiting_input' | 'done' | 'failed'
 
