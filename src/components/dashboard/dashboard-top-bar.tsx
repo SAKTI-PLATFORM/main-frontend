@@ -1,7 +1,8 @@
 'use client'
 
-import { Bell, LayoutGrid, Sparkles, Briefcase, Binoculars } from 'lucide-react'
+import { Bell, LayoutGrid, Sparkles, Briefcase, Binoculars, Map, Search } from 'lucide-react'
 import { usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { useDashboardView } from './dashboard-view'
 
@@ -17,7 +18,12 @@ export function DashboardTopBar() {
   const { view, setView, jobMatchesDetailName, setJobMatchesDetailId, setJobMatchesDetailName } = useDashboardView()
   const isHome = pathname === '/job-seeker'
   const isJobMatches = pathname === '/job-seeker/job-matches'
-  const section = SECTION_LABELS[pathname] ?? 'Dashboard'
+  const isLearningPathsBase = pathname === '/job-seeker/learning-paths'
+  const isExploreRoadmap = pathname === '/job-seeker/learning-paths/explore'
+  const isRoadmapDetail = pathname.startsWith('/job-seeker/learning-paths/') && pathname.endsWith('/roadmap')
+  const isLearningPaths = isLearningPathsBase || isRoadmapDetail
+  
+  const section = SECTION_LABELS[pathname] ?? (isExploreRoadmap ? 'Cari Roadmap' : isRoadmapDetail ? 'Detail Roadmap' : 'Dashboard')
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-[#ECECF2] bg-[#F7F7FA] px-5 sm:px-8">
@@ -25,7 +31,18 @@ export function DashboardTopBar() {
         <span className="text-[#9A9AAB]">Overview</span>
         <span className="text-[#C7C7D2]">/</span>
         
-        {isJobMatches && jobMatchesDetailName ? (
+        {isRoadmapDetail ? (
+          <>
+            <Link 
+              href="/job-seeker/learning-paths"
+              className="text-[#9A9AAB] hover:text-[#26262F] font-semibold transition"
+            >
+              Roadmap Belajar
+            </Link>
+            <span className="text-[#C7C7D2]">/</span>
+            <span className="font-semibold text-[#26262F]">Detail Roadmap</span>
+          </>
+        ) : isJobMatches && jobMatchesDetailName ? (
           <>
             <button 
               type="button" 
@@ -95,6 +112,35 @@ export function DashboardTopBar() {
               <Binoculars className="size-4" />
               Cari Lowongan
             </button>
+          </div>
+        )}
+
+        {(isLearningPaths || isExploreRoadmap) && (
+          <div className="flex items-center gap-1 rounded-lg bg-[#EFEEFF] p-1">
+            <Link
+              href="/job-seeker/learning-paths"
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors',
+                isLearningPaths
+                  ? 'bg-white text-[#4138D8] shadow-sm'
+                  : 'text-[#6E6E86] hover:text-[#4138D8]'
+              )}
+            >
+              <Map className="size-4" />
+              Roadmap Belajarmu
+            </Link>
+            <Link
+              href="/job-seeker/learning-paths/explore"
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors',
+                isExploreRoadmap
+                  ? 'bg-white text-[#4138D8] shadow-sm'
+                  : 'text-[#6E6E86] hover:text-[#4138D8]'
+              )}
+            >
+              <Search className="size-4" />
+              Cari Roadmap
+            </Link>
           </div>
         )}
 

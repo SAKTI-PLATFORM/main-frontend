@@ -32,7 +32,7 @@ export default function RootLayout({
       lang="id"
       className={`${figtree.variable} ${instrumentSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-[family-name:var(--font-figtree)]">
+      <body className="min-h-full flex flex-col font-[family-name:var(--font-instrument-sans)]">
         <Providers>{children}</Providers>
       </body>
     </html>
