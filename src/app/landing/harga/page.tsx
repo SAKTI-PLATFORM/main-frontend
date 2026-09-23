@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { harga as c } from '../_content'
 import { CtaBand } from '../_components/blocks'
-import { CreditEconomics } from '../_components/credit-economics'
 import { FaqGroups } from '../_components/faq-groups'
 import { PageHero } from '../_components/page-hero'
 import { PricingGroup } from '../_components/pricing'

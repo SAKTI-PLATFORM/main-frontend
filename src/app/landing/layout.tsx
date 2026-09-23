@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: '%s — SAKTI',
   },
   description:
-    'Upload CV kamu sekali, biar SAKTI yang cari lowongan yang beneran cocok dan tunjukkan skill apa yang masih perlu diasah. Gratis untuk pencari kerja.',
+    'Upload CV kamu sekali, biar SAKTI yang cari lowongan yang beneran cocok dan tunjukkan skill apa yang masih perlu diasah. Mulai gratis dengan 5 credit.',
   openGraph: {
     title: 'SAKTI — Pencocokan kerja berbasis AI',
     description:

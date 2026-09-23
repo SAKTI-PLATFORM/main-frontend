@@ -32,7 +32,7 @@ export const pencariKerja = {
       { label: 'Lihat cara kerjanya', href: '/landing/cara-kerja', variant: 'ghost' as const },
     ],
     stats: [
-      T('Rp0', 'Selamanya gratis'),
+      T('5 credit', 'Gratis untuk pengguna baru'),
       N('<', 10, ' detik', 'CV langsung terbaca'),
       N('', 92, '%', 'Contoh skor kecocokan tertinggi'),
     ],
@@ -126,13 +126,13 @@ export const pencariKerja = {
   },
   cta: {
     title: 'Upload CV kamu sekarang',
-    lead: 'Nggak ada biaya, nggak ada komitmen. Cukup satu file CV untuk mulai lihat lowongan mana yang benar-benar cocok.',
+    lead: 'Mulai gratis dengan 5 credit, nggak ada komitmen. Cukup satu file CV untuk mulai lihat lowongan mana yang benar-benar cocok.',
     ctas: [
       { label: 'Upload CV & Mulai Sekarang', href: '/register' },
       { label: 'Lihat Pengembangan Skill', href: '/landing/pengembangan-skill', variant: 'ghost' as const },
     ],
     stats: [
-      T('Gratis', 'Selamanya untuk pencari kerja'),
+      T('5 credit', 'Gratis untuk pengguna baru'),
       N('<', 10, ' detik', 'Waktu proses CV'),
       N('<', 2, ' detik', 'Waktu matching'),
     ],
@@ -363,8 +363,8 @@ export const skill = {
     title: 'Tahu persis skill apa yang bikin kamu tertinggal, dan cara menutupnya.',
     lead: 'Bukan cuma laporan skill gap yang bikin bingung. Kamu dapat urutan prioritas belajar dan rekomendasi sumber belajar yang sesuai waktu dan budgetmu.',
     ctas: [
-      { label: 'Cek Skill Gap Gratis', href: '/register' },
-      { label: 'Lihat paket Plus & Pro', href: '/landing/harga', variant: 'ghost' as const },
+      { label: 'Cek Skill Gap Sekarang', href: '/register' },
+      { label: 'Lihat Harga', href: '/landing/harga', variant: 'ghost' as const },
     ],
     stats: [
       T('Top 10', 'Skill gap paling berpengaruh'),
@@ -418,59 +418,15 @@ export const skill = {
       },
     ] satisfies SkillGapRow[],
   },
-  tiers: {
-    eyebrow: 'Tingkatan akses',
-    title: 'Mulai gratis, upgrade kalau butuh lebih dalam',
-    lead: 'Skill gap report dasar selalu gratis. Fitur lanjutan tersedia untuk yang ingin lebih fokus.',
-    list: [
-      {
-        name: 'Gratis',
-        price: 'Rp0',
-        unit: '/bulan',
-        desc: 'Untuk mulai memahami skill gap dasar.',
-        features: [
-          'Skill gap report dasar',
-          'Top 3 rekomendasi belajar',
-          'Update tiap kali profil diubah',
-        ],
-        cta: { label: 'Mulai Gratis', href: '/register' },
-      },
-      {
-        name: 'Plus',
-        badge: 'Populer',
-        price: 'Rp49rb–79rb',
-        unit: '/bulan',
-        desc: 'Untuk yang serius menutup skill gap dalam waktu dekat.',
-        features: [
-          'Semua di paket Gratis',
-          'Top 10 skill gap lengkap',
-          'Akses materi in-house terbatas',
-        ],
-        cta: { label: 'Lihat Detail Plus', href: '/landing/harga' },
-      },
-      {
-        name: 'Pro',
-        price: 'Rp129rb–199rb',
-        unit: '/bulan',
-        desc: 'Untuk career coaching penuh dan priority matching.',
-        features: [
-          'Semua di paket Plus',
-          'Akses penuh library kursus in-house',
-          'Mentoring & priority matching',
-        ],
-        cta: { label: 'Lihat Detail Pro', href: '/landing/harga' },
-      },
-    ] satisfies Tier[],
-  },
   cta: {
     title: 'Cek skill gap kamu sekarang',
-    lead: 'Gratis untuk laporan dasar. Lihat sendiri skill apa yang paling menahan kamu dari lowongan impian.',
+    lead: 'Mulai dengan 5 credit gratis. Lihat sendiri skill apa yang paling menahan kamu dari lowongan impian.',
     ctas: [
-      { label: 'Cek Skill Gap Gratis', href: '/register' },
+      { label: 'Cek Skill Gap Sekarang', href: '/register' },
       { label: 'Lihat Fitur Pencari Kerja', href: '/landing/untuk-pencari-kerja', variant: 'ghost' as const },
     ],
     stats: [
-      T('Selalu gratis', 'Laporan dasar'),
+      T('5 credit', 'Gratis untuk pengguna baru'),
       N('<', 5, ' detik', 'Waktu analisis'),
       T('Berkelanjutan', 'Update seiring waktu'),
     ],
@@ -498,8 +454,8 @@ export const harga = {
       {
         name: 'Pencari Kerja',
         badge: '5 credit gratis',
-        price: 'Rp0',
-        unit: 'untuk mulai',
+        price: 'Rp1.500',
+        unit: '/credit',
         desc: 'Daftar dan langsung dapat 5 credit gratis. Butuh lebih? Top up hanya Rp1.500 per credit, kapan pun.',
         features: [
           '5 credit gratis begitu mendaftar',
@@ -612,8 +568,8 @@ export const faqPage = {
       heading: 'Soal upload CV dan pencarian kerja',
       items: [
         {
-          q: 'Apakah SAKTI benar-benar gratis untuk pencari kerja?',
-          a: 'Ya. Akses dasar untuk mencari dan mendapatkan rekomendasi lowongan selalu gratis buat pencari kerja. Biaya hanya berlaku untuk fitur premium seperti coaching karier lanjutan di paket Plus dan Pro.',
+          q: 'Berapa biaya untuk pencari kerja?',
+          a: 'Setiap pengguna baru dapat 5 credit gratis begitu mendaftar. Setelah itu, top up hanya Rp1.500 per credit sesuai kebutuhan — tanpa langganan dan tanpa tanggal kedaluwarsa. Credit dipakai tiap kali menjalankan pencocokan lowongan, skill gap report, atau roadmap belajar.',
         },
         {
           q: 'Format CV apa saja yang didukung?',

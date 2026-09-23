@@ -243,8 +243,8 @@ export const faq = {
   headline: 'Pertanyaan yang mungkin ada di kepalamu',
   items: [
     {
-      q: 'Apakah SAKTI benar-benar gratis untuk pencari kerja?',
-      a: 'Ya. Semua fitur inti untuk pencari kerja (unggah CV, pencocokan lowongan, dan analisis skill gap) gratis selamanya dan tanpa kartu kredit. Biaya hanya berlaku untuk paket perusahaan.',
+      q: 'Berapa biaya untuk pencari kerja?',
+      a: 'Setiap pengguna baru dapat 5 credit gratis begitu mendaftar, tanpa kartu kredit. Setelah itu, top up hanya Rp1.500 per credit sesuai kebutuhan — credit dipakai tiap kali menjalankan pencocokan lowongan, skill gap report, atau roadmap belajar. Perusahaan memakai paket flat bulanan terpisah.',
     },
     {
       q: 'Data CV saya aman nggak?',
@@ -275,7 +275,7 @@ export const finalCta = {
   stats: [
     { prefix: '>', value: 85, suffix: '%', label: 'Target akurasi' },
     { prefix: 'Turun >', value: 40, suffix: '%', label: 'Target penurunan waktu screening' },
-    { text: 'Rp0 selamanya', label: 'Biaya untuk pencari kerja' },
+    { text: '5 credit gratis', label: 'Untuk pengguna baru' },
   ] satisfies Stat[],
 }
 
