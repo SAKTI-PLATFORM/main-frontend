@@ -112,7 +112,7 @@ export default function JobSeekerHomePage() {
         {psikometri ? (
           <SaktiInsightsPanel assessment={assessment} career={career} targetRole={data.profile.targetRole} />
         ) : (
-          <aside className="flex flex-col rounded-lg bg-white ring-1 ring-[#ECECF2]">
+          <aside className="px-2 flex flex-col rounded-lg bg-white ring-1 ring-[#ECECF2]">
             <CareerForecastsSection career={career} jobMatcher={jobMatcher} />
             <div className="mx-5 border-t border-[#EFEFF4]" />
             <ProfileCompletionSection session={session} />
@@ -178,8 +178,6 @@ function IconSquare({ children, label, href, external, disabled }: { children: R
   );
 }
 
-// Rounded-square "in" badge (background follows currentColor, so it tracks
-// the same gray → purple hover as the other two icons in the group).
 function LinkedinBadge({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden className={className}>
@@ -211,8 +209,8 @@ function FeatureLinks() {
 function FeatureAction({ children, href, onClick, icon: Icon, active }: { children: React.ReactNode; href?: string; onClick?: () => void; icon: typeof Brain; active?: boolean }) {
   const inner = (
     <>
-      <Icon className={cn('size-5 shrink-0 transition-colors', active ? 'text-[#4138D8]' : 'text-[#9293A2] group-hover:text-[#4138D8]')} />
-      <span className={cn('text-[12px] font-medium leading-tight', active ? 'text-[#4138D8]' : 'text-[#5C5C6A]')}>{children}</span>
+      <Icon className={cn('size-4 shrink-0 transition-colors', active ? 'text-[#4138D8]' : 'text-[#9293A2] group-hover:text-[#4138D8]')} />
+      <span className={cn('text-[11px] font-medium leading-tight', active ? 'text-[#4138D8]' : 'text-[#5C5C6A]')}>{children}</span>
     </>
   );
   const classes = 'group flex items-center gap-2 text-left';
@@ -238,12 +236,6 @@ function FeatureAction({ children, href, onClick, icon: Icon, active }: { childr
   );
 }
 
-/**
- * Weekly roadmap nudge, driven entirely by the latest TalentForger run
- * (`useDashboard().learningPath`). No completed roadmap -> CTA / status only.
- * The backend has no per-module completion tracking yet, so "progress" is the
- * position of the active week within the plan's own week count.
- */
 function WeeklyLearningCard({ learningPath }: { learningPath: LearningPathRun }) {
   const result = learningPath?.status === 'COMPLETED' ? learningPath.result : null;
   const busy = learningPath?.status === 'PENDING' || learningPath?.status === 'RUNNING';
@@ -345,7 +337,6 @@ function SkillGapCard({ jobMatcher }: { jobMatcher: JobMatcherRun }) {
       {gaps.length > 0 ? (
         <>
           <div className="relative mt-3">
-            {/* Reference grid for the three proficiency tiers, drawn once behind every bar. */}
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[90px]">
               {SKILL_LEVEL_LINES.map((pct) => (
                 <div key={pct} className="absolute inset-x-0 border-t border-dashed border-[#E7E4F5]" style={{ bottom: `${pct}%` }} />
@@ -815,7 +806,7 @@ function CareerForecastsSection({ career, jobMatcher }: { career: DoubleDiamondR
         <p className="mt-3 rounded-lg bg-[#FAFAFC] p-4 text-center text-xs leading-5 text-[#8A8A98]">Rekomendasi role muncul setelah rangkaian onboarding sel esai.</p>
       )}
 
-      <Link href="/job-seeker/job-matches" className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[#3E1DD1] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#3315B8]">
+      <Link href="/job-seeker/job-matches" className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[#3E1DD1] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#3315B8]">
         <BriefcaseBusiness className="size-4" />
         Lihat Selengkapnya
       </Link>
@@ -945,8 +936,6 @@ function onboardingStage(session: OnboardingSessionResponse | null): number {
   return 3;
 }
 
-// Frontend-only rollup of the backend OCEAN/RIASEC dimensions (all 0-100) into
-// the three broad competency families shown in Sakti Insights.
 function competencyScores(ocean: Ocean, riasec: Riasec) {
   const clamp = (value: number) => Math.min(100, Math.max(0, Math.round(value)));
   return {
@@ -968,8 +957,6 @@ function normalizeConfidence(value: number): number {
   return Math.round((value <= 1 ? value * 100 : value) * 100) / 100;
 }
 
-// Skill-gap `current_level` / `required_level` are 0-100 proficiency scores
-// (see SkillGapResult in the AI service). Reference lines mark the quarter marks.
 const SKILL_LEVEL_LINES = [25, 50, 75] as const;
 
 function priorityRank(priority: string): number {
