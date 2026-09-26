@@ -23,11 +23,12 @@ export function DashboardTopBar() {
   const isJobMatches = isJobMatchesBase || isJobMatchesExplore
   const isLearningPathsBase = pathname === '/job-seeker/learning-paths'
   const isExploreRoadmap = pathname === '/job-seeker/learning-paths/explore'
-  const isRoadmapDetail = pathname.startsWith('/job-seeker/learning-paths/') && pathname.endsWith('/roadmap')
   const isCatalog = pathname.startsWith('/job-seeker/learning-paths/catalog')
+  const isCatalogRoadmapDetail = pathname.startsWith('/job-seeker/learning-paths/catalog/') && pathname.endsWith('/roadmap')
+  const isRoadmapDetail = !isCatalog && pathname.startsWith('/job-seeker/learning-paths/') && pathname.endsWith('/roadmap')
   const isLearningPaths = isLearningPathsBase || isRoadmapDetail
   
-  const section = SECTION_LABELS[pathname] ?? (isExploreRoadmap ? 'Cari Materi' : isCatalog ? 'Katalog Roadmap' : isRoadmapDetail ? 'Detail Roadmap' : 'Dashboard')
+  const section = SECTION_LABELS[pathname] ?? (isExploreRoadmap ? 'Cari Materi' : isCatalogRoadmapDetail ? 'Detail Roadmap' : isCatalog ? 'Katalog Roadmap' : isRoadmapDetail ? 'Detail Roadmap' : 'Dashboard')
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-[#ECECF2] bg-[#F7F7FA] px-5 sm:px-8">
@@ -42,6 +43,17 @@ export function DashboardTopBar() {
               className="text-[#9A9AAB] hover:text-[#26262F] font-semibold transition"
             >
               Roadmap Belajar
+            </Link>
+            <span className="text-[#C7C7D2]">/</span>
+            <span className="font-semibold text-[#26262F]">Detail Roadmap</span>
+          </>
+        ) : isCatalogRoadmapDetail ? (
+          <>
+            <Link 
+              href="/job-seeker/learning-paths/catalog"
+              className="text-[#9A9AAB] hover:text-[#26262F] font-semibold transition"
+            >
+              Katalog Roadmap
             </Link>
             <span className="text-[#C7C7D2]">/</span>
             <span className="font-semibold text-[#26262F]">Detail Roadmap</span>
