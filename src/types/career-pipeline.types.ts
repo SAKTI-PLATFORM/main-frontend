@@ -234,3 +234,15 @@ export interface PipelineRun<T> {
   /** Turn trail: live while RUNNING, persisted once COMPLETED. */
   turns?: TurnEvent[]
 }
+
+export type RoleCatalogCategory = 'IT' | 'Bisnis' | 'Marketing'
+
+export interface RoleCatalogItem {
+  roleCatalogId: string
+  roleSlug: string
+  roleName: string
+  category: RoleCatalogCategory
+  roleLevel: string
+  description: string | null
+  keySkills: string[]
+}

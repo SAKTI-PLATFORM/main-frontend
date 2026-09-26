@@ -29,6 +29,7 @@ import type {
   LeaderboardResponse,
   PipelineRun,
   RoadmapProgress,
+  RoleCatalogItem,
   TalentForgerResult,
 } from '@/types/career-pipeline.types'
 
@@ -190,6 +191,23 @@ export const seekerApi = {
     api.get<ApiResponse<PipelineRun<TalentForgerResult>>>(
       `${basePath}/${sessionId}/learning-paths/latest`,
       matchId ? { params: { matchId } } : undefined,
+    ),
+
+  generateFreeLearningPath: (sessionId: string, roleSlug: string) =>
+    api.post<ApiResponse<PipelineRun<TalentForgerResult>>>(
+      `${basePath}/${sessionId}/learning-paths/generate-free`,
+      { roleSlug },
+    ),
+
+  getLatestFreeLearningPath: (sessionId: string, roleSlug: string) =>
+    api.get<ApiResponse<PipelineRun<TalentForgerResult>>>(
+      `${basePath}/${sessionId}/learning-paths/free/latest`,
+      { params: { roleSlug } },
+    ),
+
+  getRoleCatalog: (category?: 'IT' | 'Bisnis' | 'Marketing') =>
+    api.get<ApiResponse<RoleCatalogItem[]>>('/job-seeker/role-catalog',
+      category ? { params: { category } } : undefined,
     ),
 
   getRoadmapProgress: (sessionId: string, matchId: string) =>

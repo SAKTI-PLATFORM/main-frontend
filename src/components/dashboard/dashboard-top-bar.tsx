@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, LayoutGrid, Sparkles, Briefcase, Binoculars, Map, Search } from 'lucide-react'
+import { Bell, LayoutGrid, Sparkles, Briefcase, Binoculars, Map, Search, Globe } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -24,9 +24,10 @@ export function DashboardTopBar() {
   const isLearningPathsBase = pathname === '/job-seeker/learning-paths'
   const isExploreRoadmap = pathname === '/job-seeker/learning-paths/explore'
   const isRoadmapDetail = pathname.startsWith('/job-seeker/learning-paths/') && pathname.endsWith('/roadmap')
+  const isCatalog = pathname.startsWith('/job-seeker/learning-paths/catalog')
   const isLearningPaths = isLearningPathsBase || isRoadmapDetail
   
-  const section = SECTION_LABELS[pathname] ?? (isExploreRoadmap ? 'Cari Materi' : isRoadmapDetail ? 'Detail Roadmap' : 'Dashboard')
+  const section = SECTION_LABELS[pathname] ?? (isExploreRoadmap ? 'Cari Materi' : isCatalog ? 'Katalog Roadmap' : isRoadmapDetail ? 'Detail Roadmap' : 'Dashboard')
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-[#ECECF2] bg-[#F7F7FA] px-5 sm:px-8">
@@ -128,7 +129,7 @@ export function DashboardTopBar() {
           </div>
         )}
 
-        {(isLearningPaths || isExploreRoadmap) && (
+        {(isLearningPaths || isExploreRoadmap || isCatalog) && (
           <div className="flex items-center gap-1 rounded-lg bg-[#EFEEFF] p-1">
             <Link
               href="/job-seeker/learning-paths"
@@ -153,6 +154,18 @@ export function DashboardTopBar() {
             >
               <Search className="size-4" />
               Cari Materi
+            </Link>
+            <Link
+              href="/job-seeker/learning-paths/catalog"
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors',
+                isCatalog
+                  ? 'bg-white text-[#4138D8] shadow-sm'
+                  : 'text-[#6E6E86] hover:text-[#4138D8]'
+              )}
+            >
+              <Globe className="size-4" />
+              Katalog Roadmap
             </Link>
           </div>
         )}
