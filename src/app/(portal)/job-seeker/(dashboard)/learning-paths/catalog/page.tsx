@@ -378,7 +378,6 @@ export default function CatalogPage() {
                           <RoleCard
                             key={role.roleSlug}
                             role={role}
-                            sessionId={sessionId}
                             onSelect={setSelectedRole}
                             isSelected={selectedRole?.roleSlug === role.roleSlug}
                           />
